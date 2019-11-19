@@ -376,14 +376,28 @@
   <ItemGroup />
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Cube.cpp" />
+    <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="DX11 Framework.cpp" />
+    <ClCompile Include="Object.cpp" />
+    <ClCompile Include="OBJLoader.cpp" />
+    <ClCompile Include="Primitives.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ClassDiagram.cd" />
     <None Include="DX11 Framework.fx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
+    <ClInclude Include="Camera.h" />
+    <ClInclude Include="Cube.h" />
+    <ClInclude Include="DDSTextureLoader.h" />
+    <ClInclude Include="Object.h" />
+    <ClInclude Include="OBJLoader.h" />
+    <ClInclude Include="Primitives.h" />
     <CLInclude Include="resource.h" />
+    <ClInclude Include="Structures.h" />
     <ResourceCompile Include="DX11 Framework.rc" />
   </ItemGroup>
   <ItemGroup>

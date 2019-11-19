@@ -12,10 +12,23 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
+    <ClInclude Include="DDSTextureLoader.h" />
+    <ClInclude Include="OBJLoader.h" />
+    <ClInclude Include="Structures.h" />
+    <ClInclude Include="Camera.h" />
+    <ClInclude Include="Object.h" />
+    <ClInclude Include="Cube.h" />
+    <ClInclude Include="Primitives.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="DX11 Framework.cpp" />
+    <ClCompile Include="DDSTextureLoader.cpp" />
+    <ClCompile Include="OBJLoader.cpp" />
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Object.cpp" />
+    <ClCompile Include="Cube.cpp" />
+    <ClCompile Include="Primitives.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">
@@ -26,6 +39,7 @@
     <None Include="DX11 Framework.fx">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DX11 Framework.rc">

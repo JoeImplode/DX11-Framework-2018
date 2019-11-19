@@ -22,7 +22,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     return 0;
 }
-
 Application::Application()
 {
 	_hInst = nullptr;
@@ -40,14 +39,22 @@ Application::Application()
 	_cubeVertexBuffer = nullptr;
 	_pConstantBuffer = nullptr;
 
+	_pTextureRV = nullptr;
+	_pSamplerLinear = nullptr;
 	_pyramidIndexBuffer = nullptr;
 	_pyramidVertexBuffer = nullptr;
+
+	_sphereIndexBuffer = nullptr;
+	_sphereVertexBuffer = nullptr;
 
 	ID3D11DepthStencilView* _depthStencilView;
 	ID3D11Texture2D* _depthStencilBuffer;
 	ID3D11RasterizerState* _wireFrame;
 	ID3D11RasterizerState* _solidState;
-	
+
+	_camera = new Camera(_eyePos,_at,_up,_to, _WindowWidth,_WindowHeight,0.01f, 100.0f);
+	_secondCamera = new Camera(_secondEyePos,_secondAt, _secondUp,_secondTo, _WindowWidth, _WindowHeight, 0.01f, 100.0f);
+	_pathCamera = new Camera(_pathEyePos, _pathAt, _pathUp, _pathTo, _WindowWidth, _WindowHeight, 0.01f, 100.0f);
 	_Origin.x = 0, _Origin.y = 0, _Origin.z = 0;
 	_planetPos.x = _Origin.x + 2, _planetPos.y = 0, _planetPos.z = _Origin.z + 2;
 	_moonPos.x = _planetPos.x + 2, _moonPos.y = 0, _moonPos.z = _planetPos.z + 2;
@@ -81,17 +88,11 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
     }
 
 	// Initialize the world matrix
-	XMStoreFloat4x4(&_world, XMMatrixIdentity());
 
     // Initialize the view matrix
-	XMVECTOR Eye = XMVectorSet(0.0f, 4.0f, -2.0f, 0.0f);
-	XMVECTOR At = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
-	XMStoreFloat4x4(&_view, XMMatrixLookAtLH(Eye, At, Up));
-    // Initialize the projection matrix
-	XMStoreFloat4x4(&_projection, XMMatrixPerspectiveFovLH(XM_PIDIV2, _WindowWidth / (FLOAT) _WindowHeight, 0.01f, 100.0f));
-	
+	_camera->Update();
+	_secondCamera->Update();
 	return S_OK;
 }
 
@@ -142,9 +143,35 @@ HRESULT Application::InitShadersAndInputLayout()
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 
+	};
+	_cube = new Cube();
+	_cube->LoadTexture(_pd3dDevice, L"Hercules_COLOR.dds");
+
+	//Create our textures
+	CreateDDSTextureFromFile(_pd3dDevice, L"Crate_COLOR.dds", nullptr, &_pTextureRV);
+	_pImmediateContext->PSSetShaderResources(0, 1, &_pTextureRV);
+
+	CreateDDSTextureFromFile(_pd3dDevice, L"Hercules_COLOR.dds", nullptr, &_TankTexture);
+
+	_testObject = new Object("Hercules.obj", _pd3dDevice);
+	_testObject->LoadTexture(_pd3dDevice, L"Hercules_COLOR.dds");
+
+	//Set the sample description for our textures
+	D3D11_SAMPLER_DESC sampDesc;
+	ZeroMemory(&sampDesc, sizeof(sampDesc));
+	sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+	sampDesc.MinLOD = 0;
+	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+	_pd3dDevice->CreateSamplerState(&sampDesc, &_pSamplerLinear);
+	_pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
 	UINT numElements = ARRAYSIZE(layout);
 
     // Create the input layout
@@ -158,6 +185,7 @@ HRESULT Application::InitShadersAndInputLayout()
     // Set the input layout
     _pImmediateContext->IASetInputLayout(_pVertexLayout);
 
+
 	return hr;
 }
 
@@ -168,58 +196,60 @@ HRESULT Application::InitVertexBuffer()
     // Create vertex buffer
    SimpleVertex vertices[] =
     {
-        { XMFLOAT3( 1.0f, 1.0f, 1.0f ), XMFLOAT4( 0.0f, 0.0f, 1.0f, 1.0f ) },
-        { XMFLOAT3( -1.0f, 1.0f, 1.0f ), XMFLOAT4( 0.0f, 1.0f, 0.0f, 1.0f ) },
-        { XMFLOAT3( -1.0f, -1.0f, 1.0f ), XMFLOAT4( 0.0f, 1.0f, 1.0f, 1.0f ) },
-        { XMFLOAT3( 1.0f, -1.0f, 1.0f ), XMFLOAT4( 1.0f, 0.0f, 0.0f, 1.0f ) },
-		{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-		{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+        { XMFLOAT3( 1.0f, 1.0f, 1.0f ), XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f,1.0f) }, //top front right
+        { XMFLOAT3( -1.0f, 1.0f, 1.0f ), XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f , 0.0f)}, //top front left
+        { XMFLOAT3( -1.0f, -1.0f, 1.0f ),  XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT2(0.0f,1.0f) }, //bottom front left
+        { XMFLOAT3( 1.0f, -1.0f, 1.0f ), XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT2(1.0f,1.0f) }, //bottom front right
+
+		{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT2(1.0f,1.0f) }, //bottom back right
+		{ XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT2(1.0f,0.0f) }, //back top right
+		{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT2(0.0f,0.0f) }, //back top left
+		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT2(0.0f,1.0f) }, //bottom back left
     };
 
    SimpleVertex pyramidVertices[] =
    {
-	   { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f) },
-	   { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f) },
-	   { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f) },
-	   { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f) },
-	   { XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f) },
+	   { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT2(1.0f,1.0f) },
+	   { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT2(1.0f,0.0f)},
+	   { XMFLOAT3(-1.0f, -1.0f, -1.0f),XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT2(0.0f,1.0f)},
+	   { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT2(0.0f,0.0f)},
+	   { XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.05f,0.05f)},
    };
 
    SimpleVertex gridVertices[] =
    {
-	   {XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(1.0f, -1.0f, 0.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(2.0f, -1.0f, 0.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(3.0f, -1.0f, 0.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(4.0f, -1.0f, 0.0f), XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)},
+	   {XMFLOAT3(-10.0f, -1.0f, -10.0f),XMFLOAT3(-10.0f, -1.0f, -10.0f), XMFLOAT2(0.0f,1.0f)},
+	   {XMFLOAT3(-5.0f, -1.0f, -10.0f),XMFLOAT3(-5.0f, -1.0f, -10.0f) , XMFLOAT2(1.0f,1.0f)},
+	   {XMFLOAT3(0.0f, -1.0f, -10.0f), XMFLOAT3(0.0f, -1.0f, -10.0f), XMFLOAT2(0.0f,1.0f)},
+	   {XMFLOAT3(5.0f, -1.0f, -10.0f),XMFLOAT3(5.0f, -1.0f, -10.0f) , XMFLOAT2(1.0f,1.0f)},
+	   {XMFLOAT3(10.0f, -1.0f, -10.0f), XMFLOAT3(10.0f, -1.0f, -10.0f) , XMFLOAT2(0.0f,1.0f)},
 
-	   {XMFLOAT3(0.0f, -1.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(2.0f, -1.0f, 1.0f), XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(3.0f, -1.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(4.0f, -1.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
+	   {XMFLOAT3(-10.0f, -1.0f, -5.0f), XMFLOAT3(-10.0f, -1.0f, -5.0f) , XMFLOAT2(0.0f,0.0f)},
+	   {XMFLOAT3(-5.0f, -1.0f, -5.0f), XMFLOAT3(-5.0f, -1.0f, -5.0f) , XMFLOAT2(1.0f,0.0f)},
+	   {XMFLOAT3(0.0f, -1.0f, -5.0f), XMFLOAT3(0.0f, -1.0f, -5.0f) , XMFLOAT2(0.0f,0.0f)},
+	   {XMFLOAT3(5.0f, -1.0f, -5.0f), XMFLOAT3(5.0f, -1.0f, -5.0f) , XMFLOAT2(1.0f,0.0f)},
+	   {XMFLOAT3(10.0f, -1.0f, -5.0f), XMFLOAT3(10.0f, -1.0f, -5.0f) , XMFLOAT2(0.0f,0.0f)},
 
-	   {XMFLOAT3(0.0f, -1.0f, 2.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(1.0f, -1.0f, 2.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(2.0f, -1.0f, 2.0f), XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(3.0f, -1.0f, 2.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(4.0f, -1.0f, 2.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
+	   {XMFLOAT3(-10.0f, -1.0f, 0.0f), XMFLOAT3(-10.0f, -1.0f, 0.0f) , XMFLOAT2(0.0f,1.0f)},
+	   {XMFLOAT3(-5.0f, -1.0f, 0.0f), XMFLOAT3(-5.0f, -1.0f, 0.0f) , XMFLOAT2(1.0f,1.0f)},
+	   {XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT3(0.0f, -1.0f, 0.0f) , XMFLOAT2(0.0f,1.0f)},
+	   {XMFLOAT3(5.0f, -1.0f, 0.0f), XMFLOAT3(5.0f, -1.0f, 0.0f) , XMFLOAT2(1.0f,1.0f)},
+	   {XMFLOAT3(10.0f, -1.0f, 0.0f), XMFLOAT3(10.0f, -1.0f, 0.0f) , XMFLOAT2(0.0f,1.0f)},
 
-	   {XMFLOAT3(0.0f, -1.0f, 3.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(1.0f, -1.0f, 3.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(2.0f, -1.0f, 3.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(3.0f, -1.0f, 3.0f), XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(4.0f, -1.0f, 3.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
+	   {XMFLOAT3(-10.0f, -1.0f, 5.0f), XMFLOAT3(-10.0f, -1.0f, 5.0f) , XMFLOAT2(0.0f,0.0f)},
+	   {XMFLOAT3(-5.0f, -1.0f, 5.0f), XMFLOAT3(-5.0f, -1.0f, 5.0f) , XMFLOAT2(1.0f,0.0f)},
+	   {XMFLOAT3(0.0f, -1.0f, 5.0f), XMFLOAT3(0.0f, -1.0f, 5.0f) , XMFLOAT2(0.0f,0.0f)},
+	   {XMFLOAT3(5.0f, -1.0f, 5.0f), XMFLOAT3(5.0f, -1.0f, 5.0f) , XMFLOAT2(1.0f,0.0f)},
+	   {XMFLOAT3(10.0f, -1.0f, 5.0f), XMFLOAT3(10.0f, -1.0f, 5.0f) , XMFLOAT2(0.0f,0.0f)},
 
-	   {XMFLOAT3(0.0f, -1.0f, 4.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(1.0f, -1.0f, 4.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(2.0f, -1.0f, 4.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(3.0f, -1.0f, 4.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   {XMFLOAT3(4.0f, -1.0f, 4.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)},
-	   
+	   {XMFLOAT3(-10.0f, -1.0f, 10.0f), XMFLOAT3(-10.0f, -1.0f, 10.0f) , XMFLOAT2(0.0f,1.0f)},
+	   {XMFLOAT3(-5.0f, -1.0f, 10.0f), XMFLOAT3(-5.0f, -1.0f, 10.0f) , XMFLOAT2(1.0f,1.0f)},
+	   {XMFLOAT3(0.0f, -1.0f, 10.0f), XMFLOAT3(0.0f, -1.0f, 10.0f) , XMFLOAT2(0.0f,1.0f)},
+	   {XMFLOAT3(5.0f, -1.0f, 10.0f), XMFLOAT3(5.0f, -1.0f, 10.0f) , XMFLOAT2(1.0f,1.0f)},
+	   {XMFLOAT3(10.0f, -1.0f, 10.0f), XMFLOAT3(10.0f, -1.0f, 10.0f) , XMFLOAT2(0.0f,1.0f)},
    };
+
+   //Create a buffer description and resource data for our vertices
     D3D11_BUFFER_DESC bd;
 	ZeroMemory(&bd, sizeof(bd));
     bd.Usage = D3D11_USAGE_DEFAULT;
@@ -236,15 +266,15 @@ HRESULT Application::InitVertexBuffer()
 	D3D11_SUBRESOURCE_DATA NewInitData;
 	ZeroMemory(&NewInitData, sizeof(NewInitData));
 	NewInitData.pSysMem = pyramidVertices;
-
     hr = _pd3dDevice->CreateBuffer(&bd, &NewInitData, &_pyramidVertexBuffer);
 	
 	D3D11_SUBRESOURCE_DATA gridData;
 	ZeroMemory(&gridData, sizeof(gridData));
 	gridData.pSysMem = gridVertices;
 
-	hr = _pd3dDevice->CreateBuffer(&bd, &gridData, &_gridVertexBuffer);
+	_cube->CreateVertexBuffer(&_cube->_cubeVertices, _pd3dDevice);
 
+	hr = _pd3dDevice->CreateBuffer(&bd, &gridData, &_gridVertexBuffer);
     if (FAILED(hr))
         return hr;
 
@@ -286,25 +316,26 @@ HRESULT Application::InitIndexBuffer()
 	{
 		6,1,0, 5,6,0,
 		7,2,1, 6,7,1,
-		2,3,8, 2,8,7,
-		3,4,9, 3,9,8,
+		8,3,2, 7,8,2,
+		9,4,3, 8,9,3,
 
-		5,6,11, 5,11,10,
-		6,7,12, 6,12,11,
-		7,8,13, 7,13,12,
-		8,9,14, 8,14,13,
+		11,6,5, 10,11,5,
+		12,7,6, 11,12,6,
+		13,8,7, 12,13,7,
+		14,9,8, 13,14,8,
 
-		10,11,16, 10,16,15,
-		11,12,17, 11,17,16,
-		12,13,18, 12,18,17,
-		13,14,19, 13,19,18,
+		16,11,10, 15,16,10,
+		17,12,11, 16,17,11,
+		18,13,12, 17,18,12,
+		19,14,13, 18,19,13,
 
-		15,16,21, 15,21,20,
-		16,17,22, 16,22,21,
-		17,18,23, 17,23,22,
-		18,19,24, 18,24,23,
+		21,16,15, 20,21,15,
+		22,17,16, 21,22,16,
+		23,18,17, 22,23,17,
+		24,19,18, 23,24,18,
 	};
-	//buffer description cube
+
+	//Create buffer descriptions for the objects and set index data for them
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory(&bd, sizeof(bd));
     bd.Usage = D3D11_USAGE_DEFAULT;
@@ -339,6 +370,8 @@ HRESULT Application::InitIndexBuffer()
 	gridIndexData.pSysMem = gridIndices;
 	hr = _pd3dDevice->CreateBuffer(&gridBd, &gridIndexData, &_gridIndexBuffer);
 
+	_cube->CreateIndexBuffer(&_cube->_cubeIndices, _pd3dDevice, 36);
+
     if (FAILED(hr))
         return hr;
 
@@ -366,7 +399,7 @@ HRESULT Application::InitWindow(HINSTANCE hInstance, int nCmdShow)
 
     // Create window
     _hInst = hInstance;
-    RECT rc = {0, 0, 640, 480};
+    RECT rc = {0, 0, 1280, 720};
     AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
     _hWnd = CreateWindow(L"TutorialWindowClass", L"DX11 Framework", WS_OVERLAPPEDWINDOW,
                          CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
@@ -416,19 +449,17 @@ HRESULT Application::InitDevice()
     HRESULT hr = S_OK;
 
     UINT createDeviceFlags = 0;
-
+	
 #ifdef _DEBUG
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
     D3D_DRIVER_TYPE driverTypes[] =
     {
-		D3D_DRIVER_TYPE_UNKNOWN,
 		D3D_DRIVER_TYPE_HARDWARE,
+		D3D_DRIVER_TYPE_WARP,
 		D3D_DRIVER_TYPE_REFERENCE,
-		D3D_DRIVER_TYPE_NULL,
-		D3D_DRIVER_TYPE_SOFTWARE,
-		D3D_DRIVER_TYPE_WARP
+		
     };
 
 	D3D11_TEXTURE2D_DESC depthStencilDesc;
@@ -470,7 +501,6 @@ HRESULT Application::InitDevice()
     sd.SampleDesc.Quality = 0;
     sd.Windowed = TRUE;
 
-	//PROBABLY THROWING THE ERROR
     for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
     {
         _driverType = driverTypes[driverTypeIndex];
@@ -479,7 +509,7 @@ HRESULT Application::InitDevice()
         if (SUCCEEDED(hr))
             break;
     }
-	//THROWING ERROR HERE ^^^^^
+
     if (FAILED(hr))
         return hr;
 
@@ -489,10 +519,10 @@ HRESULT Application::InitDevice()
 
     if (FAILED(hr))
         return hr;
-
+	
     hr = _pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, &_pRenderTargetView);
     pBackBuffer->Release();
-
+	
 	if (FAILED(hr))
 		return hr;
 
@@ -507,7 +537,8 @@ HRESULT Application::InitDevice()
     vp.MinDepth = 0.0f;
     vp.MaxDepth = 1.0f;
     vp.TopLeftX = 0;
-    vp.TopLeftY = 0;
+    vp.TopLeftY = 0;        
+
     _pImmediateContext->RSSetViewports(1, &vp);
 
 	InitShadersAndInputLayout();
@@ -517,18 +548,25 @@ HRESULT Application::InitDevice()
     // Set vertex buffer
     UINT stride = sizeof(SimpleVertex);
     UINT offset = 0;
-    _pImmediateContext->IASetVertexBuffers(0, 1, &_cubeVertexBuffer, &stride, &offset);
-	//_pImmediateContext->IASetVertexBuffers(0, 1, &_pyramidVertexBuffer, &stride, &offset);
-
 	InitIndexBuffer();
-
-    // Set index buffer
-    _pImmediateContext->IASetIndexBuffer(_cubeIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
-	//_pImmediateContext->IASetIndexBuffer(_pyramidIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
 
     // Set primitive topology
     _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	//Set up lighting
+	_lightDirection = XMFLOAT3(0.25f, 0.5f, -1.0f);
+	_diffuseMaterial = XMFLOAT4(0.8f, 0.5f, 0.5f, 1.0f);
+	_diffuseLight = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+	_ambientLight = XMFLOAT4(0.2f, 0.2f, 0.2f, 0.2f);
+	_ambientMaterial = XMFLOAT4(0.2f, 0.2f, 0.2f, 0.2f);
+	_specularMtrl = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
+	_specularLight = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+
+	//Specular Power
+	_specularPower = 10.0f;
+
+	//Eye Position set the camera position
+	_eyePos = XMFLOAT3(0.0f, 4.0f, -10.0f);
 
 	// Create the constant buffer
 	D3D11_BUFFER_DESC bd;
@@ -552,6 +590,10 @@ HRESULT Application::InitDevice()
 	hr = _pd3dDevice->CreateRasterizerState(&solidState, &_solidState);
 
 	_pImmediateContext->RSSetState(_solidState);
+
+	_objMeshData = OBJLoader::Load("sphere.obj", _pd3dDevice);
+	_tankMeshData = OBJLoader::Load("Hercules.obj", _pd3dDevice);
+	
 
     if (FAILED(hr))
         return hr;
@@ -598,6 +640,10 @@ void Application::Update()
 
         t = (dwTimeCur - dwTimeStart) / 1000.0f;
     }
+
+	//gTime shows how much time has elapsed from the last update
+	_gTime = t;
+
 	if ((_rotationValue != _rotationMax)&& _halfRotation == false)
 	{
 		_rotationValue += 0.5;
@@ -625,95 +671,224 @@ void Application::Update()
 		_pImmediateContext->RSSetState(_wireFrame);
 	}
 
+	if (GetAsyncKeyState(0x31))
+	{
+		_camSelection = 0;
+	}
+
+	if (GetAsyncKeyState(0x32))
+	{
+		_camSelection = 1;
+	}
+	if (GetAsyncKeyState(0x33))
+	{
+		_camSelection = 2;
+	}
+
+	if (GetAsyncKeyState(VK_LEFT))
+	{
+		_camera->atSelection = false;
+		_secondCamera->atSelection = false;
+	}
+
+	if (GetAsyncKeyState(VK_RIGHT))
+	{
+		_camera->atSelection = true;
+		_secondCamera->atSelection = true;
+	}
+
     //
-    // Animate the cube
+    // Animate the objects
     //
+
 	XMStoreFloat4x4(&_world, XMMatrixRotationY(t) * XMMatrixTranslation(0, 0, 3));
-	XMStoreFloat4x4(&_world2, XMMatrixRotationZ(t) * XMMatrixTranslation(_planetPos.x +_rotationValue,_planetPos.y,_planetPos.z) * XMMatrixRotationY(t));
+	XMStoreFloat4x4(&_world2, XMMatrixRotationZ(t) * XMMatrixTranslation(_planetPos.x + _rotationValue,_planetPos.y,_planetPos.z) * XMMatrixRotationY(t));
 	XMStoreFloat4x4(&_world3, XMMatrixRotationZ(t) * XMMatrixTranslation(_moonPos.x,_moonPos.y,_moonPos.z) * XMMatrixRotationY(t));
 	XMStoreFloat4x4(&_world4,XMMatrixTranslation(0,0,0));
+	XMStoreFloat4x4(&_world5, XMMatrixTranslation(2, 3, 2));
+	XMStoreFloat4x4(&_tankObject, XMMatrixTranslation(2, 6, 4));
+	_testObject->Update(XMMatrixRotationY(t) * XMMatrixTranslation(0, 0, 3));
+	_cube->Update(XMMatrixTranslation(0,0,0));
+	//Create a new matrix called translation and have it set to the same translation 
+	XMMATRIX Translation = XMMatrixRotationZ(t) * XMMatrixTranslation(_planetPos.x + _rotationValue, _planetPos.y, _planetPos.z) * XMMatrixRotationY(t);
+	XMFLOAT4X4 matrixAttr;
+	XMStoreFloat4x4(&matrixAttr, Translation);
+	_secondCamera->SetLookat(XMFLOAT3(matrixAttr._41, matrixAttr._42, matrixAttr._43));
 
+	if (_camera->atSelection == true)
+	{
+		XMFLOAT3 cameraAtPos = _camera->GetAt();
+		XMFLOAT3 lookAtVect = _camera->GetAt(); //Get the position for where we are looking at
+		XMFLOAT3 camPos = _camera->GetEye(); //Get the cameras location
+		XMFLOAT3 distance; //Set a new float for the distance between position and look at vector
+
+		distance.x = lookAtVect.x - camPos.x; //Find the distance of the vector
+		distance.y = lookAtVect.y - camPos.y;
+		distance.z = lookAtVect.z - camPos.z;
+
+		//Normalise the vector to get the direction when it equals 1
+		XMVECTOR dirVector = XMLoadFloat3(&distance);
+		XMVECTOR XMVector3Normalize(dirVector);
+		XMStoreFloat3(&distance, dirVector);
+
+		if (GetAsyncKeyState(0x57))
+		{
+			XMFLOAT3 distMoved = XMFLOAT3(cameraAtPos.x, cameraAtPos.y, cameraAtPos.z += 0.01f);
+			_camera->SetLookat(XMFLOAT3(distMoved));
+		}
+	}
+	else if (_camera->atSelection == false)
+	{
+		XMFLOAT3 lookToVect = _camera->GetTo(); //Firstly get our get to vector
+		XMFLOAT3 camPos = _camera->GetEye(); //Secondly get our cameras position
+		//Get the distance between the two vectors by finding the difference of each coord
+		XMFLOAT3 distance;
+		distance.x = lookToVect.x - camPos.x;
+		distance.y = lookToVect.y - camPos.y;
+		distance.z = lookToVect.z - camPos.z;
+
+		//Normalise the vector to get the direction when it equals 1
+		XMVECTOR dirVector = XMLoadFloat3(&distance);
+		XMVECTOR XMVector3Normalize(dirVector);
+		XMStoreFloat3(&distance, dirVector);
+		
+		float strafe = _camera->GetEye().x;
+
+		if (GetAsyncKeyState(0x57))
+		{
+			//Create a new position that is equal to the current position plus the direction multiplied by a small value
+			XMFLOAT3 distMoved = XMFLOAT3(camPos.x + distance.x * 0.001f, camPos.y + distance.y * 0.001f, camPos.z + distance.z * 0.001f);
+			_camera->SetPosition(distMoved);
+		}
+		else if (GetAsyncKeyState(0x53))
+		{
+			//For going backwards, simply minus the position rather than plusing
+			XMFLOAT3 distMoved = XMFLOAT3(camPos.x - distance.x * 0.001f, camPos.y - distance.y * 0.001f, camPos.z - distance.z * 0.001f);
+			_camera->SetPosition(distMoved);
+		}
+		else if (GetAsyncKeyState(0x41))
+		{
+			//Move camera position left
+			_camera->SetPosition(XMFLOAT3(strafe -= 0.01f, camPos.y, camPos.z));
+			_camera->SetTo(XMFLOAT3(lookToVect.x -= 0.01f, lookToVect.y, lookToVect.z));
+		}
+		else if (GetAsyncKeyState(0x44))
+		{
+			//move camera position right
+			_camera->SetPosition(XMFLOAT3(strafe += 0.01f, camPos.y, camPos.z));
+			_camera->SetTo(XMFLOAT3(lookToVect.x += 0.01f, lookToVect.y, lookToVect.z));
+		}
+	}
+
+	_camera->Update();
+	_secondCamera->Update();
+	_pathCamera->Update();
 }
 
 void Application::Draw()
 {
+
     //
     // Clear the back buffer
     //
+
     float ClearColor[4] = {0.0f, 0.125f, 0.3f, 1.0f}; // red,green,blue,alpha
     _pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
 	_pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0F, 0);
 
+	//Set our matrices
 	XMMATRIX world = XMLoadFloat4x4(&_world);
 	XMMATRIX world2 = XMLoadFloat4x4(&_world2);
 	XMMATRIX world3 = XMLoadFloat4x4(&_world3);
 	XMMATRIX world4 = XMLoadFloat4x4(&_world4);
-	XMMATRIX view = XMLoadFloat4x4(&_view);
-	XMMATRIX projection = XMLoadFloat4x4(&_projection);
+	XMMATRIX world5 = XMLoadFloat4x4(&_world5);
+	XMMATRIX tankObject = XMLoadFloat4x4(&_tankObject);
+
     //
     // Update variables
     //
     ConstantBuffer cb;
-	world = XMLoadFloat4x4(&_world);
-	world2 = XMLoadFloat4x4(&_world2);
-	world3 = XMLoadFloat4x4(&_world3);
-	world4 = XMLoadFloat4x4(&_world4);
-	
-	cb.mView = XMMatrixTranspose(view);
-	cb.mProjection = XMMatrixTranspose(projection);
 
-	//set the object to render as a pyramid
-	
-	UINT stride = sizeof(SimpleVertex);
-	UINT offset = 0;
-
-	_pImmediateContext->IASetVertexBuffers(0, 1, &_gridVertexBuffer, &stride, &offset);
-	_pImmediateContext->IASetIndexBuffer(_gridIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
-
-
-
+	//Set our constant buffer matrices
 	cb.mWorld = XMMatrixTranspose(world4);
-	_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
-	_pImmediateContext->DrawIndexed(96, 0, 0);
-
-
-
-
-	_pImmediateContext->IASetVertexBuffers(0, 1, &_pyramidVertexBuffer, &stride, &offset);
-	_pImmediateContext->IASetIndexBuffer(_pyramidIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
-	cb.mWorld = XMMatrixTranspose(world);
-	_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
-	_pImmediateContext->DrawIndexed(18, 0, 0);
+	//_camera->SetPosition(XMFLOAT3(0.3F, 0.6F, 3.0F));
 	
-	
-	//set the next objects to render as cubes
-	
-	_pImmediateContext->IASetVertexBuffers(0, 1, &_cubeVertexBuffer, &stride, &offset);
-	_pImmediateContext->IASetIndexBuffer(_cubeIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-	
-	cb.mWorld = XMMatrixTranspose(world2);
-	_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
-	_pImmediateContext->DrawIndexed(36, 0, 0);
+	if (_camSelection == 0)
+	{
+		cb.mView = XMMatrixTranspose(_camera->GetViewMtrx());
+		cb.mProjection = XMMatrixTranspose(_camera->GetProjectionMtrx());
+	}
 
-	cb.mWorld = XMMatrixTranspose(world3);
-	_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
-	_pImmediateContext->DrawIndexed(36, 0, 0);
+	if (_camSelection == 1)
+	{
+		cb.mView = XMMatrixTranspose(_secondCamera->GetViewMtrx());
+		cb.mProjection = XMMatrixTranspose(_secondCamera->GetProjectionMtrx());
+	}
+	if (_camSelection == 2)
+	{
+		cb.mView = XMMatrixTranspose(_pathCamera->GetViewMtrx());
+		cb.mProjection = XMMatrixTranspose(_pathCamera->GetProjectionMtrx());
+	}
 
-	///Update code inside init buffer for index and vertex to create multiple index and vertex buffers
+	//Set lighting for the constant buffer
+	cb.DiffuseLight = _diffuseLight;
+	cb.DiffuseMtrl = _diffuseMaterial;
+	cb.LightVecW = _lightDirection;
+	cb.AmbientLight = _ambientLight;
+	cb.AmbientMaterial = _ambientMaterial;
+	cb.SpecularLight = _specularLight;
+	cb.SpecularMtrl = _specularMtrl;
+	cb.SpecularPower = _specularPower;
+	cb.EyePosW = _eyePos;
 
-
-    //The
-    // Renders a triangle
+	//Set the vertex and pixel shader
+	_pImmediateContext->PSSetShaderResources(0, 1, &_pTextureRV);
 	_pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
 	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
     _pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
 	_pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
-	       
+
+	UINT stride = sizeof(SimpleVertex);
+	UINT offset = 0;
+	/*
+	_pImmediateContext->IASetVertexBuffers(0, 1, &_gridVertexBuffer, &stride, &offset);
+	_pImmediateContext->IASetIndexBuffer(_gridIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+	cb.mWorld = XMMatrixTranspose(world4);
+	_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+	_pImmediateContext->DrawIndexed(96, 0, 0);
+
+	_pImmediateContext->IASetVertexBuffers(0, 1, &_pyramidVertexBuffer, &stride, &offset);
+	_pImmediateContext->IASetIndexBuffer(_pyramidIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+	cb.mWorld = XMMatrixTranspose(world);
+	_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+	_pImmediateContext->DrawIndexed(18, 0, 0);
 	
-    //
-    // Present our back buffer to our front buffer
-    //
-   HRESULT hr = _pSwapChain->Present(0, 0);
+	_pImmediateContext->IASetVertexBuffers(0, 1, &_cubeVertexBuffer, &stride, &offset);
+	_pImmediateContext->IASetIndexBuffer(_cubeIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+	cb.mWorld = XMMatrixTranspose(world2);
+	_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+	_pImmediateContext->DrawIndexed(36, 0, 0);
+	cb.mWorld = XMMatrixTranspose(world3);
+	_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+	_pImmediateContext->DrawIndexed(36, 0, 0);
+
+	_pImmediateContext->IASetVertexBuffers(0, 1, &_objMeshData.VertexBuffer, &stride, &offset);
+	_pImmediateContext->IASetIndexBuffer(_objMeshData.IndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+	cb.mWorld = XMMatrixTranspose(world5);
+	_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+	_pImmediateContext->DrawIndexed(_objMeshData.IndexCount, 0, 0);
+
+	_pImmediateContext->PSSetShaderResources(0, 1, &_TankTexture);
+	_pImmediateContext->IASetVertexBuffers(0, 1, &_tankMeshData.VertexBuffer, &stride, &offset);
+	_pImmediateContext->IASetIndexBuffer(_tankMeshData.IndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+	cb.mWorld = XMMatrixTranspose(tankObject);
+	_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+	_pImmediateContext->DrawIndexed(_tankMeshData.IndexCount, 0, 0);
+	*/
+	_cube->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset,36);
+	//_testObject->Render(_pImmediateContext,cb,_pConstantBuffer,stride,offset);
+	
+	
+
+   _pSwapChain->Present(0, 0);
 }

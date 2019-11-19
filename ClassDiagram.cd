@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1" MembersFormat="NameAndType">
+  <Class Name="Application">
+    <Position X="2.5" Y="0.5" Width="3.5" />
+    <TypeIdentifier>
+      <HashCode>Ci6iIiJqj1qAczoqIEMAQAQAKlACAKcAQKBQAPbBQVI=</HashCode>
+      <FileName>Application.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Camera">
+    <Position X="6.25" Y="0.5" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>IAQKAAAAAAIAQAgAQAAAoAoAAhIAAgQAACIRAAIAQQA=</HashCode>
+      <FileName>Camera.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Object">
+    <Position X="9" Y="0.5" Width="3.25" />
+    <TypeIdentifier>
+      <HashCode>AAQEAAAAAQAAAAAgAQIAAAAAAAEAAAAAABAAAAAAAAA=</HashCode>
+      <FileName>Object.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Primitives">
+    <Position X="13.25" Y="5.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CBQEAEIAAAAAJAAAAgAAAAAAAAAAAIAAABoAAAAAAAA=</HashCode>
+      <FileName>Primitives.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Cube">
+    <Position X="13.25" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAgAAAAAAAAAAAAAAAAEAAAAAABAAAAAAAAAAA=</HashCode>
+      <FileName>Cube.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="MeshData">
+    <Position X="9" Y="3.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAgAAAAAAAAAAAAAAEAAAAQAAIAAAAAAAAAAAEAA=</HashCode>
+      <FileName>OBJLoader.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="SimpleVertex">
+    <Position X="6.25" Y="6.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAACIAAAAAAAgAABAAAA=</HashCode>
+      <FileName>Structures.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="ConstantBuffer">
+    <Position X="6.25" Y="9" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>QEAAgAAAYQAAAAAAAQgAAAAAAAAAAAABACAAABQBAAA=</HashCode>
+      <FileName>Structures.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Enum Name="DirectX::DDS_ALPHA_MODE">
+    <Position X="9" Y="5.75" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAAAAAAAAAAAAAACAAAAAQAAAQAAAAAAAAABA=</HashCode>
+      <FileName>DDSTextureLoader.h</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
