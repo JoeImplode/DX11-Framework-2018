@@ -1,8 +1,8 @@
 #include "Cube.h"
 
-Cube::Cube() : Primitives()
+Cube::Cube(ID3D11Device* device) : Primitives(device)
 {
-	SimpleVertex newSimpleVertex[36]
+	SimpleVertex newSimpleVertex[] =
 	{
 		{ XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) }, //top front right
 		{ XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT2(0.0f , 0.0f) }, //top front left
@@ -14,8 +14,8 @@ Cube::Cube() : Primitives()
 		{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT2(0.0f,0.0f) }, //back top left
 		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT2(0.0f,1.0f) }, //bottom back left
 	};
-	_cubeVertices = *newSimpleVertex;
-	WORD tempIndices[36]
+	CreateVertexBuffer(newSimpleVertex, _device);
+	WORD tempIndices[] =
 	{
 		0, 1, 2,
 			2, 3, 0,
@@ -30,7 +30,7 @@ Cube::Cube() : Primitives()
 			4, 7, 6,
 			6, 5, 4
 			};
-	_cubeIndices = *tempIndices;
+	CreateIndexBuffer(tempIndices, _device, 36);
 }
 
 Cube::~Cube()

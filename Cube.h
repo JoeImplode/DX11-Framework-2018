@@ -6,10 +6,8 @@
 class Cube : public Primitives
 {
 public:
-	Cube();
+	Cube(ID3D11Device* device);
 	~Cube();
-	SimpleVertex _cubeVertices;
-	WORD _cubeIndices;
 private:
 protected:
 };

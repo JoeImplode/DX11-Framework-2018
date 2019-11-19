@@ -147,7 +147,7 @@ HRESULT Application::InitShadersAndInputLayout()
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 
 	};
-	_cube = new Cube();
+	_cube = new Cube(_pd3dDevice);
 	_cube->LoadTexture(_pd3dDevice, L"Hercules_COLOR.dds");
 
 	//Create our textures
@@ -256,23 +256,25 @@ HRESULT Application::InitVertexBuffer()
     bd.ByteWidth = sizeof(SimpleVertex) * 100;
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = 0;
-	
     D3D11_SUBRESOURCE_DATA InitData;
 	ZeroMemory(&InitData, sizeof(InitData));
     InitData.pSysMem = vertices;
-	
 	hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_cubeVertexBuffer);
 
+	D3D11_BUFFER_DESC bufferDesc;
+	ZeroMemory(&bufferDesc, sizeof(bufferDesc));
+	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	bufferDesc.ByteWidth = sizeof(SimpleVertex) * 100;
+	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bufferDesc.CPUAccessFlags = 0;
 	D3D11_SUBRESOURCE_DATA NewInitData;
 	ZeroMemory(&NewInitData, sizeof(NewInitData));
 	NewInitData.pSysMem = pyramidVertices;
-    hr = _pd3dDevice->CreateBuffer(&bd, &NewInitData, &_pyramidVertexBuffer);
+    hr = _pd3dDevice->CreateBuffer(&bufferDesc, &NewInitData, &_pyramidVertexBuffer);
 	
 	D3D11_SUBRESOURCE_DATA gridData;
 	ZeroMemory(&gridData, sizeof(gridData));
 	gridData.pSysMem = gridVertices;
-
-	_cube->CreateVertexBuffer(&_cube->_cubeVertices, _pd3dDevice);
 
 	hr = _pd3dDevice->CreateBuffer(&bd, &gridData, &_gridVertexBuffer);
     if (FAILED(hr))
@@ -369,8 +371,6 @@ HRESULT Application::InitIndexBuffer()
 	ZeroMemory(&gridIndexData, sizeof(gridIndexData));
 	gridIndexData.pSysMem = gridIndices;
 	hr = _pd3dDevice->CreateBuffer(&gridBd, &gridIndexData, &_gridIndexBuffer);
-
-	_cube->CreateIndexBuffer(&_cube->_cubeIndices, _pd3dDevice, 36);
 
     if (FAILED(hr))
         return hr;
@@ -708,6 +708,7 @@ void Application::Update()
 	XMStoreFloat4x4(&_world5, XMMatrixTranslation(2, 3, 2));
 	XMStoreFloat4x4(&_tankObject, XMMatrixTranslation(2, 6, 4));
 	_testObject->Update(XMMatrixRotationY(t) * XMMatrixTranslation(0, 0, 3));
+
 	_cube->Update(XMMatrixTranslation(0,0,0));
 	//Create a new matrix called translation and have it set to the same translation 
 	XMMATRIX Translation = XMMatrixRotationZ(t) * XMMatrixTranslation(_planetPos.x + _rotationValue, _planetPos.y, _planetPos.z) * XMMatrixRotationY(t);
@@ -856,7 +857,8 @@ void Application::Draw()
 	cb.mWorld = XMMatrixTranspose(world4);
 	_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
 	_pImmediateContext->DrawIndexed(96, 0, 0);
-
+	
+	
 	_pImmediateContext->IASetVertexBuffers(0, 1, &_pyramidVertexBuffer, &stride, &offset);
 	_pImmediateContext->IASetIndexBuffer(_pyramidIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
 	cb.mWorld = XMMatrixTranspose(world);
