@@ -4,9 +4,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     PAINTSTRUCT ps;
     HDC hdc;
-
-	
-
     switch (message)
     {
         case WM_PAINT:
@@ -42,15 +39,13 @@ Application::Application()
 	_pTextureRV = nullptr;
 	_pSamplerLinear = nullptr;
 
-
 	ID3D11DepthStencilView* _depthStencilView;
 	ID3D11Texture2D* _depthStencilBuffer;
 	ID3D11RasterizerState* _wireFrame;
 	ID3D11RasterizerState* _solidState;
 
 	_camera = new Camera(_eyePos,_at,_up,_to, _WindowWidth,_WindowHeight,0.01f, 100.0f);
-	_secondCamera = new Camera(_secondEyePos,_secondAt, _secondUp,_secondTo, _WindowWidth, _WindowHeight, 0.01f, 100.0f);
-	_pathCamera = new Camera(_pathEyePos, _pathAt, _pathUp, _pathTo, _WindowWidth, _WindowHeight, 0.01f, 100.0f);
+	_secondCamera = new Camera(_secondEyePos, _secondAt, _secondUp, _secondTo, _WindowWidth, _WindowHeight, 0.01f, 100.0f);
 	_Origin.x = 0, _Origin.y = 0, _Origin.z = 0;
 	_planetPos.x = _Origin.x + 2, _planetPos.y = 0, _planetPos.z = _Origin.z + 2;
 	_moonPos.x = _planetPos.x + 2, _moonPos.y = 0, _moonPos.z = _planetPos.z + 2;
@@ -143,22 +138,6 @@ HRESULT Application::InitShadersAndInputLayout()
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 
 	};
-	_cube = new Cube(_pd3dDevice);
-	_cube->LoadTexture(_pd3dDevice, L"Crate_COLOR.dds");
-	_pyramid = new Pyramid(_pd3dDevice);
-	_pyramid->LoadTexture(_pd3dDevice, L"Crate_COLOR.dds");
-	_grid = new Grid(_pd3dDevice);
-	_grid->LoadTexture(_pd3dDevice, L"Crate_COLOR.dds");
-	
-
-	//Create our textures
-	CreateDDSTextureFromFile(_pd3dDevice, L"Crate_COLOR.dds", nullptr, &_pTextureRV);
-	_pImmediateContext->PSSetShaderResources(0, 1, &_pTextureRV);
-
-	CreateDDSTextureFromFile(_pd3dDevice, L"Hercules_COLOR.dds", nullptr, &_TankTexture);
-
-	_testObject = new Object("Hercules.obj", _pd3dDevice);
-	_testObject->LoadTexture(_pd3dDevice, L"Hercules_COLOR.dds");
 
 	//Set the sample description for our textures
 	D3D11_SAMPLER_DESC sampDesc;
@@ -179,6 +158,8 @@ HRESULT Application::InitShadersAndInputLayout()
 	hr = _pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
                                         pVSBlob->GetBufferSize(), &_pVertexLayout);
 	pVSBlob->Release();
+
+	CreateObjects();
 
 	if (FAILED(hr))
         return hr;
@@ -355,7 +336,6 @@ HRESULT Application::InitDevice()
 
 	InitShadersAndInputLayout();
 
-
     // Set vertex buffer
     UINT stride = sizeof(SimpleVertex);
     UINT offset = 0;
@@ -452,7 +432,10 @@ void Application::Update()
 	//gTime shows how much time has elapsed from the last update
 	_gTime = t;
 
-	if ((_rotationValue != _rotationMax)&& _halfRotation == false)
+    //
+    // Animate the objects
+    //
+	if ((_rotationValue != _rotationMax) && _halfRotation == false)
 	{
 		_rotationValue += 0.5;
 	}
@@ -460,7 +443,7 @@ void Application::Update()
 	{
 		_halfRotation = true;
 	}
-	else if ((_halfRotation == true) && _rotationValue!=_rotationMin)
+	else if ((_halfRotation == true) && _rotationValue != _rotationMin)
 	{
 		_rotationValue -= 0.5;
 	}
@@ -468,7 +451,62 @@ void Application::Update()
 	{
 		_halfRotation = false;
 	}
+
+	UpdateObjects(t);
+	UpdateCamera(t);
+}
+
+void Application::Draw()
+{
+    //
+    // Clear the back buffer
+    //
+    float ClearColor[4] = {0.0f, 0.125f, 0.3f, 1.0f}; // red,green,blue,alpha
+    _pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
+	_pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0F, 0);
+    //
+    // Update variables
+    //
+    ConstantBuffer cb;
 	
+	if (_camSelection == 0)
+	{
+		cb.mView = XMMatrixTranspose(_camera->GetViewMtrx());
+		cb.mProjection = XMMatrixTranspose(_camera->GetProjectionMtrx());
+		_eyePos = _camera->GetEye();
+	}
+
+	if (_camSelection == 1)
+	{
+		cb.mView = XMMatrixTranspose(_secondCamera->GetViewMtrx());
+		cb.mProjection = XMMatrixTranspose(_secondCamera->GetProjectionMtrx());
+		_eyePos = _secondCamera->GetEye();
+	}
+	//Set lighting for the constant buffer
+	cb.DiffuseLight = _diffuseLight;
+	cb.DiffuseMtrl = _diffuseMaterial;
+	cb.LightVecW = _lightDirection;
+	cb.AmbientLight = _ambientLight;
+	cb.AmbientMaterial = _ambientMaterial;
+	cb.SpecularLight = _specularLight;
+	cb.SpecularMtrl = _specularMtrl;
+	cb.SpecularPower = _specularPower;
+	cb.EyePosW = _eyePos;
+
+	//Set the vertex and pixel shader
+	_pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
+	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
+    _pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	_pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
+
+	UINT stride = sizeof(SimpleVertex);
+	UINT offset = 0;
+	RenderObjects(stride, offset, cb);
+   _pSwapChain->Present(0, 0);
+}
+
+void Application::UpdateCamera(static float t)
+{
 	if (GetAsyncKeyState(VK_DOWN))
 	{
 		_pImmediateContext->RSSetState(_solidState);
@@ -504,44 +542,7 @@ void Application::Update()
 		_camera->atSelection = true;
 		_secondCamera->atSelection = true;
 	}
-
-    //
-    // Animate the objects
-    //
-
-	_testObject->Update(XMMatrixRotationY(t) * XMMatrixTranslation(0, 0, 3));
-	_cube->Update(XMMatrixRotationZ(t) * XMMatrixTranslation(_planetPos.x + _rotationValue, _planetPos.y, _planetPos.z) * XMMatrixRotationY(t));
-	_pyramid->Update(XMMatrixTranslation(5, 3, 1));
-	_grid->Update(XMMatrixTranslation(-3, -5, 0));
-	//Create a new matrix called translation and have it set to the same translation 
-	XMMATRIX Translation = XMMatrixRotationZ(t) * XMMatrixTranslation(_planetPos.x + _rotationValue, _planetPos.y, _planetPos.z) * XMMatrixRotationY(t);
-	XMFLOAT4X4 matrixAttr;
-	XMStoreFloat4x4(&matrixAttr, Translation);
-	_secondCamera->SetLookat(XMFLOAT3(matrixAttr._41, matrixAttr._42, matrixAttr._43));
-
-	if (_camera->atSelection == true)
-	{
-		XMFLOAT3 cameraAtPos = _camera->GetAt();
-		XMFLOAT3 lookAtVect = _camera->GetAt(); //Get the position for where we are looking at
-		XMFLOAT3 camPos = _camera->GetEye(); //Get the cameras location
-		XMFLOAT3 distance; //Set a new float for the distance between position and look at vector
-
-		distance.x = lookAtVect.x - camPos.x; //Find the distance of the vector
-		distance.y = lookAtVect.y - camPos.y;
-		distance.z = lookAtVect.z - camPos.z;
-
-		//Normalise the vector to get the direction when it equals 1
-		XMVECTOR dirVector = XMLoadFloat3(&distance);
-		XMVECTOR XMVector3Normalize(dirVector);
-		XMStoreFloat3(&distance, dirVector);
-
-		if (GetAsyncKeyState(0x57))
-		{
-			XMFLOAT3 distMoved = XMFLOAT3(cameraAtPos.x, cameraAtPos.y, cameraAtPos.z += 0.01f);
-			_camera->SetLookat(XMFLOAT3(distMoved));
-		}
-	}
-	else if (_camera->atSelection == false)
+	if (_camera->atSelection == false)
 	{
 		XMFLOAT3 lookToVect = _camera->GetTo(); //Firstly get our get to vector
 		XMFLOAT3 camPos = _camera->GetEye(); //Secondly get our cameras position
@@ -555,7 +556,7 @@ void Application::Update()
 		XMVECTOR dirVector = XMLoadFloat3(&distance);
 		XMVECTOR XMVector3Normalize(dirVector);
 		XMStoreFloat3(&distance, dirVector);
-		
+
 		float strafe = _camera->GetEye().x;
 
 		if (GetAsyncKeyState(0x57))
@@ -583,73 +584,34 @@ void Application::Update()
 			_camera->SetTo(XMFLOAT3(lookToVect.x += 0.01f, lookToVect.y, lookToVect.z));
 		}
 	}
-
 	_camera->Update();
 	_secondCamera->Update();
-	_pathCamera->Update();
 }
 
-void Application::Draw()
+void Application::UpdateObjects(static float t)
 {
+	_testObject->Update(XMMatrixRotationY(t) * XMMatrixTranslation(0, 0, 3));
+	_cube->Update(XMMatrixRotationZ(t) * XMMatrixTranslation(_planetPos.x + _rotationValue, _planetPos.y, _planetPos.z) * XMMatrixRotationY(t));
+	_pyramid->Update(XMMatrixTranslation(5, 3, 1));
+	_grid->Update(XMMatrixTranslation(-3, -5, 0));
+}
 
-    //
-    // Clear the back buffer
-    //
-
-    float ClearColor[4] = {0.0f, 0.125f, 0.3f, 1.0f}; // red,green,blue,alpha
-    _pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
-	_pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0F, 0);
-
-
-    //
-    // Update variables
-    //
-    ConstantBuffer cb;
-
-	//_camera->SetPosition(XMFLOAT3(0.3F, 0.6F, 3.0F));
-	
-	if (_camSelection == 0)
-	{
-		cb.mView = XMMatrixTranspose(_camera->GetViewMtrx());
-		cb.mProjection = XMMatrixTranspose(_camera->GetProjectionMtrx());
-	}
-
-	if (_camSelection == 1)
-	{
-		cb.mView = XMMatrixTranspose(_secondCamera->GetViewMtrx());
-		cb.mProjection = XMMatrixTranspose(_secondCamera->GetProjectionMtrx());
-	}
-	if (_camSelection == 2)
-	{
-		cb.mView = XMMatrixTranspose(_pathCamera->GetViewMtrx());
-		cb.mProjection = XMMatrixTranspose(_pathCamera->GetProjectionMtrx());
-	}
-
-	//Set lighting for the constant buffer
-	cb.DiffuseLight = _diffuseLight;
-	cb.DiffuseMtrl = _diffuseMaterial;
-	cb.LightVecW = _lightDirection;
-	cb.AmbientLight = _ambientLight;
-	cb.AmbientMaterial = _ambientMaterial;
-	cb.SpecularLight = _specularLight;
-	cb.SpecularMtrl = _specularMtrl;
-	cb.SpecularPower = _specularPower;
-	cb.EyePosW = _eyePos;
-
-	//Set the vertex and pixel shader
-	_pImmediateContext->PSSetShaderResources(0, 1, &_pTextureRV);
-	_pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
-	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
-    _pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
-	_pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
-
-	UINT stride = sizeof(SimpleVertex);
-	UINT offset = 0;
-
-	_cube->Render(_pImmediateContext, cb, _pConstantBuffer,36,stride, offset);
-	_testObject->Render(_pImmediateContext,cb,_pConstantBuffer,stride,offset);
+void Application::RenderObjects(UINT stride,UINT offset, ConstantBuffer cb)
+{
+	_cube->Render(_pImmediateContext, cb, _pConstantBuffer, 36, stride, offset);
+	_testObject->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
 	_pyramid->Render(_pImmediateContext, cb, _pConstantBuffer, 18, stride, offset);
 	_grid->Render(_pImmediateContext, cb, _pConstantBuffer, 96, stride, offset);
+}
 
-   _pSwapChain->Present(0, 0);
+void Application::CreateObjects()
+{
+	_cube = new Cube(_pd3dDevice);
+	_cube->LoadTexture(_pd3dDevice, L"Crate_COLOR.dds");
+	_pyramid = new Pyramid(_pd3dDevice);
+	_pyramid->LoadTexture(_pd3dDevice, L"Crate_COLOR.dds");
+	_grid = new Grid(_pd3dDevice);
+	_grid->LoadTexture(_pd3dDevice, L"Crate_COLOR.dds");
+	_testObject = new Object("Hercules.obj", _pd3dDevice);
+	_testObject->LoadTexture(_pd3dDevice, L"Hercules_COLOR.dds");
 }

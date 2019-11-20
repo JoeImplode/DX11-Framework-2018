@@ -13,7 +13,7 @@ class Primitives
 public:
 	Primitives(ID3D11Device* device);
 	~Primitives();
-	void CreateVertexBuffer(SimpleVertex Vertices[], ID3D11Device* device);
+	void CreateVertexBuffer(SimpleVertex Vertices[], ID3D11Device* device, int size);
 	void CreateIndexBuffer(WORD indices[],ID3D11Device* device, UINT indexLength);
 	void Update(XMMATRIX transformation);
 	void Render(ID3D11DeviceContext* context, ConstantBuffer cb, ID3D11Buffer* ConstantBuffer,UINT indexCount, UINT stride, UINT offset);

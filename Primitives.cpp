@@ -8,12 +8,12 @@ Primitives::~Primitives()
 {
 }
 
-void Primitives::CreateVertexBuffer(SimpleVertex Vertices[], ID3D11Device* device)
+void Primitives::CreateVertexBuffer(SimpleVertex Vertices[], ID3D11Device* device, int size)
 {
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory(&bd, sizeof(bd));
 	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(SimpleVertex) * 100;
+	bd.ByteWidth = sizeof(SimpleVertex) * size;
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = 0;
 	D3D11_SUBRESOURCE_DATA InitData;

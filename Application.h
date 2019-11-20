@@ -69,32 +69,23 @@ private:
 	//Cameras
 	Camera*					_camera;
 	Camera*					_secondCamera;
-	Camera*					_pathCamera;
 
 	Object*					_testObject;
 
 	int currentPath = 0;
 
 	//Camera pos, at up and to
+	//-----------------------------------------------------
 	XMFLOAT3 _eyePos = XMFLOAT3(0.0f, 6.0f, -15.0f);
 	XMFLOAT3 _at = XMFLOAT3(1.0f, 1.0f, 1.0f);
 	XMFLOAT3 _up = XMFLOAT3(0.0f, 1.0f, 0.0f);
 	XMFLOAT3 _to = XMFLOAT3(0.0f, 0.0f, 5.0f);
 
-	XMFLOAT3 _secondEyePos = XMFLOAT3(2.0f, 3.0f, -10.0f);
-	XMFLOAT3 _secondAt = XMFLOAT3(0.0f, 0.0f, 3.0f);
+	XMFLOAT3 _secondEyePos = XMFLOAT3(2.0f, 20.0f, -2.0f);
+	XMFLOAT3 _secondAt = XMFLOAT3(0.0f, 0.0f, -2.0f);
 	XMFLOAT3 _secondUp = XMFLOAT3(0.0f, 1.0f, 0.0f);
 	XMFLOAT3 _secondTo = XMFLOAT3(10.0f, 60.0f, 340.0f);
-
-	XMFLOAT3 _pathEyePos = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	XMFLOAT3 _pathAt = XMFLOAT3(0.0F, 0.0F, 3.0F);
-	XMFLOAT3 _pathUp = XMFLOAT3(0.0f, 1.0f, 0.0f);
-	XMFLOAT3 _pathTo = XMFLOAT3(10.0f, 60.0f, 340.0f);
-
-	XMFLOAT3 start = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	XMFLOAT3 path2 = XMFLOAT3(0.0f, 0.0f, 10.0f);
-	XMFLOAT3 path3 = XMFLOAT3(10.0f, 0.0f, 10.0f);
-	XMFLOAT3 end = XMFLOAT3(10.0f, 0.0f, 0.0f);
+	//-----------------------------------------------------
 
 	//Depth stencil items
 	ID3D11DepthStencilView* _depthStencilView;
@@ -102,6 +93,7 @@ private:
 	ID3D11RasterizerState* _wireFrame;
 	ID3D11RasterizerState* _solidState;
 
+	//-----------------------------------------------------
 	float _rotationValue;
 	bool _halfRotation;
 	const float _rotationMax = 5.0f;
@@ -109,11 +101,15 @@ private:
 
 	bool _wireFrameCheck = false;
 	int _camSelection = 0;
+	//-----------------------------------------------------
 
 	Cube* _cube;
 	Pyramid* _pyramid;
 	Grid* _grid;
-
+	void UpdateCamera(static float t);
+	void UpdateObjects(static float t);
+	void RenderObjects(UINT stride, UINT offset, ConstantBuffer cb);
+	void CreateObjects();
 private:
 	HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow);
 	HRESULT InitDevice();
@@ -121,18 +117,8 @@ private:
 	HRESULT CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
 	HRESULT InitShadersAndInputLayout();
 
-	//initialise cameras function
-	//initialise textures
-	//initialise objects
-	//create vertex descriptions
-	//create index descriptions
-	//initialise lighting
-	//Put plane, cube and pyramid into their seperate object classes
 	UINT _WindowHeight;
 	UINT _WindowWidth;
-
-
-
 public:
 	Application();
 	~Application();
@@ -140,6 +126,7 @@ public:
 	HRESULT Initialise(HINSTANCE hInstance, int nCmdShow);
 
 	void Update();
+	
 	void Draw();
 };
 

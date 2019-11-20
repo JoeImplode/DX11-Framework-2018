@@ -12,7 +12,7 @@ Pyramid::Pyramid(ID3D11Device* device) : Primitives(device)
 		{ XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT2(0.0f,0.0f)},
 		{ XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.05f,0.05f)},
 	};
-	CreateVertexBuffer(pyramidVertices, _device);
+	CreateVertexBuffer(pyramidVertices, _device,6);
 
 	WORD pyramidIndices[] =
 	{

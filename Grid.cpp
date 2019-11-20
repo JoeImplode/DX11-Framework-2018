@@ -36,7 +36,7 @@ Grid::Grid(ID3D11Device* device) : Primitives(device)
 		{XMFLOAT3(5.0f, -1.0f, 10.0f), XMFLOAT3(5.0f, -1.0f, 10.0f) , XMFLOAT2(1.0f,1.0f)},
 		{XMFLOAT3(10.0f, -1.0f, 10.0f), XMFLOAT3(10.0f, -1.0f, 10.0f) , XMFLOAT2(0.0f,1.0f)},
 	};
-	CreateVertexBuffer(gridVertices, _device);
+	CreateVertexBuffer(gridVertices, _device,26);
 
 	WORD gridIndices[] =
 	{

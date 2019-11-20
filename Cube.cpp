@@ -14,7 +14,7 @@ Cube::Cube(ID3D11Device* device) : Primitives(device)
 		{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT2(0.0f,0.0f) }, //back top left
 		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT2(0.0f,1.0f) }, //bottom back left
 	};
-	CreateVertexBuffer(newSimpleVertex, _device);
+	CreateVertexBuffer(newSimpleVertex, _device, 9);
 	WORD tempIndices[] =
 	{
 		0, 1, 2,
