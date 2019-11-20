@@ -10,7 +10,6 @@ Primitives::~Primitives()
 
 void Primitives::CreateVertexBuffer(SimpleVertex Vertices[], ID3D11Device* device)
 {
-	ID3D11Buffer* tempBuffer;
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory(&bd, sizeof(bd));
 	bd.Usage = D3D11_USAGE_DEFAULT;
@@ -20,13 +19,12 @@ void Primitives::CreateVertexBuffer(SimpleVertex Vertices[], ID3D11Device* devic
 	D3D11_SUBRESOURCE_DATA InitData;
 	ZeroMemory(&InitData, sizeof(InitData));
 	InitData.pSysMem = Vertices;
-	device->CreateBuffer(&bd, &InitData, &tempBuffer);
-	_primVertexBuffer = tempBuffer;
+	device->CreateBuffer(&bd, &InitData, &_primVertexBuffer);
+	
 }
 
 void Primitives::CreateIndexBuffer(WORD indices[], ID3D11Device* device,UINT indexLength)
 {
-	ID3D11Buffer* tempBuffer;
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory(&bd, sizeof(bd));
 	bd.Usage = D3D11_USAGE_DEFAULT;
@@ -37,8 +35,7 @@ void Primitives::CreateIndexBuffer(WORD indices[], ID3D11Device* device,UINT ind
 	D3D11_SUBRESOURCE_DATA IndexData;
 	ZeroMemory(&IndexData, sizeof(IndexData));
 	IndexData.pSysMem = indices;
-	device->CreateBuffer(&bd, &IndexData, &tempBuffer);
-	_primIndexBuffer = tempBuffer;
+	device->CreateBuffer(&bd, &IndexData, &_primIndexBuffer);
 }
 
 void Primitives::Render(ID3D11DeviceContext* context, ConstantBuffer cb, ID3D11Buffer* ConstantBuffer,UINT indexCount,UINT stride, UINT offset)

@@ -14,6 +14,9 @@
 #include "Object.h"
 #include "Primitives.h"
 #include "Cube.h"
+#include "Pyramid.h"
+#include "Grid.h"
+
 using namespace std;
 using namespace DirectX;
 
@@ -41,18 +44,7 @@ private:
 	ID3D11SamplerState*		_pSamplerLinear;
 	ID3D11Buffer*           _pConstantBuffer;
 
-	//Buffers
-	ID3D11Buffer*			_cubeIndexBuffer;
-	ID3D11Buffer*			_cubeVertexBuffer;
-	ID3D11Buffer*			_pyramidIndexBuffer;
-	ID3D11Buffer*			_pyramidVertexBuffer;
-	ID3D11Buffer*			_gridIndexBuffer;
-	ID3D11Buffer*			_gridVertexBuffer;
-	ID3D11Buffer*			_sphereIndexBuffer;
-	ID3D11Buffer*			_sphereVertexBuffer;
-
 	//Objects
-	XMFLOAT4X4              _world, _world2, _world3,_world4,_world5,_tankObject;
 
 	XMFLOAT4X4              _view;
 	XMFLOAT4X4              _projection;
@@ -119,6 +111,8 @@ private:
 	int _camSelection = 0;
 
 	Cube* _cube;
+	Pyramid* _pyramid;
+	Grid* _grid;
 
 private:
 	HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow);
@@ -126,8 +120,6 @@ private:
 	void Cleanup();
 	HRESULT CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
 	HRESULT InitShadersAndInputLayout();
-	HRESULT InitVertexBuffer();
-	HRESULT InitIndexBuffer();
 
 	//initialise cameras function
 	//initialise textures

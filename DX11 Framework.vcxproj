@@ -380,9 +380,11 @@
     <ClCompile Include="Cube.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="DX11 Framework.cpp" />
+    <ClCompile Include="Grid.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="OBJLoader.cpp" />
     <ClCompile Include="Primitives.cpp" />
+    <ClCompile Include="Pyramid.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
@@ -393,9 +395,11 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Cube.h" />
     <ClInclude Include="DDSTextureLoader.h" />
+    <ClInclude Include="Grid.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="OBJLoader.h" />
     <ClInclude Include="Primitives.h" />
+    <ClInclude Include="Pyramid.h" />
     <CLInclude Include="resource.h" />
     <ClInclude Include="Structures.h" />
     <ResourceCompile Include="DX11 Framework.rc" />

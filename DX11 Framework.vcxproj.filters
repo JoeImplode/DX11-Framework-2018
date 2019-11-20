@@ -19,6 +19,8 @@
     <ClInclude Include="Object.h" />
     <ClInclude Include="Cube.h" />
     <ClInclude Include="Primitives.h" />
+    <ClInclude Include="Pyramid.h" />
+    <ClInclude Include="Grid.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
@@ -29,6 +31,8 @@
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="Cube.cpp" />
     <ClCompile Include="Primitives.cpp" />
+    <ClCompile Include="Pyramid.cpp" />
+    <ClCompile Include="Grid.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">
