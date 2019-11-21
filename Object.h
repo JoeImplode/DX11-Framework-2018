@@ -14,7 +14,7 @@ using namespace DirectX;
 class Object
 {
 public:
-	Object(char* fileName, ID3D11Device* device);
+	Object(char* fileName, ID3D11Device* device, bool invertTextCoords);
 	~Object();
 	void LoadTexture(ID3D11Device* device, const wchar_t* fileName);
 	void Update(XMMATRIX objectTransformation);

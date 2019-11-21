@@ -50,7 +50,8 @@ private:
 	XMFLOAT4X4              _projection;
 
 	XMFLOAT3				_Origin, _planetPos, _moonPos;
-	
+	XMFLOAT3 _eyePos = XMFLOAT3(0.0f, 6.0f, -15.0f);
+
 	//Lighting
 	XMFLOAT3				_lightDirection;
 	XMFLOAT4				_diffuseMaterial;
@@ -71,21 +72,8 @@ private:
 	Camera*					_secondCamera;
 
 	Object*					_testObject;
-
-	int currentPath = 0;
-
+	Object* _ship;
 	//Camera pos, at up and to
-	//-----------------------------------------------------
-	XMFLOAT3 _eyePos = XMFLOAT3(0.0f, 6.0f, -15.0f);
-	XMFLOAT3 _at = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	XMFLOAT3 _up = XMFLOAT3(0.0f, 1.0f, 0.0f);
-	XMFLOAT3 _to = XMFLOAT3(0.0f, 0.0f, 5.0f);
-
-	XMFLOAT3 _secondEyePos = XMFLOAT3(2.0f, 20.0f, -2.0f);
-	XMFLOAT3 _secondAt = XMFLOAT3(0.0f, 0.0f, -2.0f);
-	XMFLOAT3 _secondUp = XMFLOAT3(0.0f, 1.0f, 0.0f);
-	XMFLOAT3 _secondTo = XMFLOAT3(10.0f, 60.0f, 340.0f);
-	//-----------------------------------------------------
 
 	//Depth stencil items
 	ID3D11DepthStencilView* _depthStencilView;
@@ -93,23 +81,22 @@ private:
 	ID3D11RasterizerState* _wireFrame;
 	ID3D11RasterizerState* _solidState;
 
-	//-----------------------------------------------------
 	float _rotationValue;
 	bool _halfRotation;
 	const float _rotationMax = 5.0f;
 	const float _rotationMin = 0.0f;
 
-	bool _wireFrameCheck = false;
 	int _camSelection = 0;
-	//-----------------------------------------------------
 
 	Cube* _cube;
 	Pyramid* _pyramid;
 	Grid* _grid;
+
 	void UpdateCamera(static float t);
 	void UpdateObjects(static float t);
 	void RenderObjects(UINT stride, UINT offset, ConstantBuffer cb);
 	void CreateObjects();
+	void CreateCameras();
 private:
 	HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow);
 	HRESULT InitDevice();

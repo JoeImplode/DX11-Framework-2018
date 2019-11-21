@@ -44,8 +44,8 @@ Application::Application()
 	ID3D11RasterizerState* _wireFrame;
 	ID3D11RasterizerState* _solidState;
 
-	_camera = new Camera(_eyePos,_at,_up,_to, _WindowWidth,_WindowHeight,0.01f, 100.0f);
-	_secondCamera = new Camera(_secondEyePos, _secondAt, _secondUp, _secondTo, _WindowWidth, _WindowHeight, 0.01f, 100.0f);
+	CreateCameras();
+
 	_Origin.x = 0, _Origin.y = 0, _Origin.z = 0;
 	_planetPos.x = _Origin.x + 2, _planetPos.y = 0, _planetPos.z = _Origin.z + 2;
 	_moonPos.x = _planetPos.x + 2, _moonPos.y = 0, _moonPos.z = _planetPos.z + 2;
@@ -435,22 +435,6 @@ void Application::Update()
     //
     // Animate the objects
     //
-	if ((_rotationValue != _rotationMax) && _halfRotation == false)
-	{
-		_rotationValue += 0.5;
-	}
-	else if (_rotationValue == _rotationMax)
-	{
-		_halfRotation = true;
-	}
-	else if ((_halfRotation == true) && _rotationValue != _rotationMin)
-	{
-		_rotationValue -= 0.5;
-	}
-	else if ((_rotationValue == _rotationMin) && _halfRotation == true)
-	{
-		_halfRotation = false;
-	}
 
 	UpdateObjects(t);
 	UpdateCamera(t);
@@ -590,28 +574,69 @@ void Application::UpdateCamera(static float t)
 
 void Application::UpdateObjects(static float t)
 {
-	_testObject->Update(XMMatrixRotationY(t) * XMMatrixTranslation(0, 0, 3));
+	if ((_rotationValue != _rotationMax) && _halfRotation == false)
+	{
+		_rotationValue += 0.5;
+	}
+	else if (_rotationValue == _rotationMax)
+	{
+		_halfRotation = true;
+	}
+	else if ((_halfRotation == true) && _rotationValue != _rotationMin)
+	{
+		_rotationValue -= 0.5;
+	}
+	else if ((_rotationValue == _rotationMin) && _halfRotation == true)
+	{
+		_halfRotation = false;
+	}
+	
 	_cube->Update(XMMatrixRotationZ(t) * XMMatrixTranslation(_planetPos.x + _rotationValue, _planetPos.y, _planetPos.z) * XMMatrixRotationY(t));
 	_pyramid->Update(XMMatrixTranslation(5, 3, 1));
 	_grid->Update(XMMatrixTranslation(-3, -5, 0));
+	//_testObject->Update(XMMatrixRotationY(t) * XMMatrixTranslation(0, 0, 3));
+	_ship->Update(XMMatrixTranslation(2, 3, 2));
 }
 
 void Application::RenderObjects(UINT stride,UINT offset, ConstantBuffer cb)
 {
-	_cube->Render(_pImmediateContext, cb, _pConstantBuffer, 36, stride, offset);
-	_testObject->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
+	//_cube->Render(_pImmediateContext, cb, _pConstantBuffer, 36, stride, offset);
+	//_testObject->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
+	_ship->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
 	_pyramid->Render(_pImmediateContext, cb, _pConstantBuffer, 18, stride, offset);
 	_grid->Render(_pImmediateContext, cb, _pConstantBuffer, 96, stride, offset);
 }
 
 void Application::CreateObjects()
 {
+	_testObject = new Object("Hercules.obj", _pd3dDevice, false);
+	_testObject->LoadTexture(_pd3dDevice, L"Hercules_COLOR.dds");
+
 	_cube = new Cube(_pd3dDevice);
 	_cube->LoadTexture(_pd3dDevice, L"Crate_COLOR.dds");
+
 	_pyramid = new Pyramid(_pd3dDevice);
 	_pyramid->LoadTexture(_pd3dDevice, L"Crate_COLOR.dds");
+
 	_grid = new Grid(_pd3dDevice);
 	_grid->LoadTexture(_pd3dDevice, L"Crate_COLOR.dds");
-	_testObject = new Object("Hercules.obj", _pd3dDevice);
-	_testObject->LoadTexture(_pd3dDevice, L"Hercules_COLOR.dds");
+
+	_ship = new Object("ship.obj", _pd3dDevice, true);
+	_ship->LoadTexture(_pd3dDevice, L"Hercules_COLOR.dds");
+
+}
+
+void Application::CreateCameras()
+{
+	XMFLOAT3 _pos = XMFLOAT3(0.0f, 6.0f, -15.0f);
+	XMFLOAT3 _at = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	XMFLOAT3 _up = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	XMFLOAT3 _to = XMFLOAT3(0.0f, 0.0f, 5.0f);
+
+	XMFLOAT3 _secondEyePos = XMFLOAT3(2.0f, 20.0f, -2.0f);
+	XMFLOAT3 _secondAt = XMFLOAT3(0.0f, 0.0f, -2.0f);
+	XMFLOAT3 _secondUp = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	XMFLOAT3 _secondTo = XMFLOAT3(10.0f, 60.0f, 340.0f);
+	_camera = new Camera(_pos, _at, _up, _to, _WindowWidth, _WindowHeight, 0.01f, 100.0f);
+	_secondCamera = new Camera(_secondEyePos, _secondAt, _secondUp, _secondTo, _WindowWidth, _WindowHeight, 0.01f, 100.0f);
 }
