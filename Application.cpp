@@ -593,15 +593,15 @@ void Application::UpdateObjects(static float t)
 	
 	_cube->Update(XMMatrixRotationZ(t) * XMMatrixTranslation(_planetPos.x + _rotationValue, _planetPos.y, _planetPos.z) * XMMatrixRotationY(t));
 	_pyramid->Update(XMMatrixTranslation(5, 3, 1));
-	_grid->Update(XMMatrixTranslation(-3, -5, 0));
-	//_testObject->Update(XMMatrixRotationY(t) * XMMatrixTranslation(0, 0, 3));
-	_ship->Update(XMMatrixTranslation(2, 3, 2));
+	_grid->Update(XMMatrixScaling(5, 5, 5) * XMMatrixTranslation(-3, -5, 0));
+	_testObject->Update(XMMatrixRotationY(t) * XMMatrixTranslation(0, 0, 3));
+	_ship->Update(XMMatrixScaling(0.2, 0.2, 0.2)* XMMatrixTranslation(2, -5.5, 2));
 }
 
 void Application::RenderObjects(UINT stride,UINT offset, ConstantBuffer cb)
 {
-	//_cube->Render(_pImmediateContext, cb, _pConstantBuffer, 36, stride, offset);
-	//_testObject->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
+	_cube->Render(_pImmediateContext, cb, _pConstantBuffer, 36, stride, offset);
+	_testObject->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
 	_ship->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
 	_pyramid->Render(_pImmediateContext, cb, _pConstantBuffer, 18, stride, offset);
 	_grid->Render(_pImmediateContext, cb, _pConstantBuffer, 96, stride, offset);
@@ -621,7 +621,7 @@ void Application::CreateObjects()
 	_grid = new Grid(_pd3dDevice);
 	_grid->LoadTexture(_pd3dDevice, L"Crate_COLOR.dds");
 
-	_ship = new Object("ship.obj", _pd3dDevice, true);
+	_ship = new Object("ship2.obj", _pd3dDevice, true);
 	_ship->LoadTexture(_pd3dDevice, L"Hercules_COLOR.dds");
 
 }
