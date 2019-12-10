@@ -23,26 +23,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 Application::Application()
 {
-	_hInst = nullptr;
-	_hWnd = nullptr;
-	_driverType = D3D_DRIVER_TYPE_NULL;
-	_featureLevel = D3D_FEATURE_LEVEL_11_0;
-	_pd3dDevice = nullptr;
-	_pImmediateContext = nullptr;
-	_pSwapChain = nullptr;
-	_pRenderTargetView = nullptr;
-	_pVertexShader = nullptr;
-	_pPixelShader = nullptr;
-	_pVertexLayout = nullptr;
-	_pConstantBuffer = nullptr;
+	_hInst =					nullptr;
+	_hWnd =						nullptr;
+	_driverType =				D3D_DRIVER_TYPE_NULL;
+	_featureLevel =				D3D_FEATURE_LEVEL_11_0;
+	_pd3dDevice =				nullptr;
+	_pImmediateContext =		nullptr;
+	_pSwapChain =				nullptr;
+	_pRenderTargetView =		nullptr;
+	_pVertexShader =			nullptr;
+	_pPixelShader =				nullptr;
+	_pVertexLayout =			nullptr;
+	_pConstantBuffer =			nullptr;
 
-	_pTextureRV = nullptr;
-	_pSamplerLinear = nullptr;
-
-	ID3D11DepthStencilView* _depthStencilView;
-	ID3D11Texture2D* _depthStencilBuffer;
-	ID3D11RasterizerState* _wireFrame;
-	ID3D11RasterizerState* _solidState;
+	_pTextureRV =				nullptr;
+	_pSamplerLinear =			nullptr;
+	
+	ID3D11DepthStencilView*		_depthStencilView;
+	ID3D11Texture2D*			_depthStencilBuffer;
+	ID3D11RasterizerState*		_wireFrame;
+	ID3D11RasterizerState*		_solidState;
 
 	CreateCameras();
 
@@ -50,8 +50,11 @@ Application::Application()
 	_planetPos.x = _Origin.x + 2, _planetPos.y = 0, _planetPos.z = _Origin.z + 2;
 	_moonPos.x = _planetPos.x + 2, _moonPos.y = 0, _moonPos.z = _planetPos.z + 2;
 
-	_rotationValue = 0.0f;
-	_halfRotation = false;
+	_rotationValue =				0.0f;
+	_halfRotation =					false;
+	XMMATRIX tempView;
+	_mouse = new MouseEvent();
+	x = 0, y = 0;
 }
 
 Application::~Application()
@@ -62,9 +65,7 @@ Application::~Application()
 HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 {
     if (FAILED(InitWindow(hInstance, nCmdShow)))
-	{
         return E_FAIL;
-	}
 
     RECT rc;
     GetClientRect(_hWnd, &rc);
@@ -74,16 +75,9 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
     if (FAILED(InitDevice()))
     {
         Cleanup();
-
         return E_FAIL;
     }
 
-	// Initialize the world matrix
-
-    // Initialize the view matrix
-
-	_camera->Update();
-	_secondCamera->Update();
 	return S_OK;
 }
 
@@ -91,6 +85,7 @@ HRESULT Application::InitShadersAndInputLayout()
 {
 	HRESULT hr;
 
+	//START
     // Compile the vertex shader
     ID3DBlob* pVSBlob = nullptr;
     hr = CompileShaderFromFile(L"DX11 Framework.fx", "VS", "vs_4_0", &pVSBlob);
@@ -101,10 +96,9 @@ HRESULT Application::InitShadersAndInputLayout()
                    L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
         return hr;
     }
-
-	// Create the vertex shader
 	
-	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pVertexShader);
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), 
+		pVSBlob->GetBufferSize(), nullptr, &_pVertexShader);
 	
 	if (FAILED(hr))
 	{	
@@ -126,6 +120,43 @@ HRESULT Application::InitShadersAndInputLayout()
 	// Create the pixel shader
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pPixelShader);
 	pPSBlob->Release();
+	//END
+
+	// Compile the vertex shader
+	pVSBlob = nullptr;
+	hr = CompileShaderFromFile(L"WaveShader.fx", "VS", "vs_4_0", &pVSBlob);
+
+	if (FAILED(hr))
+	{
+		MessageBox(nullptr,
+			L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return hr;
+	}
+
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(),
+		pVSBlob->GetBufferSize(), nullptr, &_pWaterVertexShader);
+
+	if (FAILED(hr))
+	{
+		pVSBlob->Release();
+		return hr;
+	}
+
+	// Compile the pixel shader
+	pPSBlob = nullptr;
+	hr = CompileShaderFromFile(L"WaveShader.fx", "PS", "ps_4_0", &pPSBlob);
+
+	if (FAILED(hr))
+	{
+		MessageBox(nullptr,
+			L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return hr;
+	}
+
+	// Create the pixel shader
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pWaterPixelShader);
+	pPSBlob->Release();
+
 
     if (FAILED(hr))
         return hr;
@@ -347,21 +378,17 @@ HRESULT Application::InitDevice()
 	_lightDirection = XMFLOAT3(0.25f, 0.5f, -1.0f);
 	_diffuseMaterial = XMFLOAT4(0.8f, 0.5f, 0.5f, 1.0f);
 	_diffuseLight = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
-	_ambientLight = XMFLOAT4(0.2f, 0.2f, 0.2f, 0.2f);
+	_ambientLight = XMFLOAT4(0.2f, 0.2f, 0.2f, 0.02f);
 	_ambientMaterial = XMFLOAT4(0.2f, 0.2f, 0.2f, 0.2f);
 	_specularMtrl = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
 	_specularLight = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 
-	//Specular Power
 	_specularPower = 10.0f;
-
-	//Eye Position set the camera position
-	_eyePos = XMFLOAT3(0.0f, 4.0f, -10.0f);
-
+	
 	// Create the constant buffer
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory(&bd, sizeof(bd));
-	bd.Usage = D3D11_USAGE_DEFAULT;
+	bd.Usage = D3D11_USAGE_DEFAULT; 
 	bd.ByteWidth = sizeof(ConstantBuffer);
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bd.CPUAccessFlags = 0;
@@ -380,10 +407,11 @@ HRESULT Application::InitDevice()
 	hr = _pd3dDevice->CreateRasterizerState(&solidState, &_solidState);
 
 	_pImmediateContext->RSSetState(_solidState);
-
-	_objMeshData = OBJLoader::Load("sphere.obj", _pd3dDevice);
-	_tankMeshData = OBJLoader::Load("Hercules.obj", _pd3dDevice);
 	
+	//Calls to initialise the interface to direct input
+
+	_mouse->CreateMouseDevice(_hWnd, _hInst);
+
 
     if (FAILED(hr))
         return hr;
@@ -399,6 +427,8 @@ void Application::Cleanup()
     if (_pVertexLayout) _pVertexLayout->Release();
     if (_pVertexShader) _pVertexShader->Release();
     if (_pPixelShader) _pPixelShader->Release();
+	if (_pWaterVertexShader) _pWaterVertexShader->Release();
+	if (_pWaterPixelShader) _pWaterPixelShader->Release();
     if (_pRenderTargetView) _pRenderTargetView->Release();
     if (_pSwapChain) _pSwapChain->Release();
     if (_pImmediateContext) _pImmediateContext->Release();
@@ -407,6 +437,7 @@ void Application::Cleanup()
 	if (_depthStencilBuffer) _depthStencilBuffer->Release();
 	if (_wireFrame) _wireFrame->Release();
 	if (_solidState) _solidState->Release();
+	_mouse->~MouseEvent();
 }
 
 void Application::Update()
@@ -435,7 +466,7 @@ void Application::Update()
     //
     // Animate the objects
     //
-
+	
 	UpdateObjects(t);
 	UpdateCamera(t);
 }
@@ -451,21 +482,11 @@ void Application::Draw()
     //
     // Update variables
     //
-    ConstantBuffer cb;
-	
-	if (_camSelection == 0)
-	{
-		cb.mView = XMMatrixTranspose(_camera->GetViewMtrx());
-		cb.mProjection = XMMatrixTranspose(_camera->GetProjectionMtrx());
-		_eyePos = _camera->GetEye();
-	}
+	ConstantBuffer cb;
 
-	if (_camSelection == 1)
-	{
-		cb.mView = XMMatrixTranspose(_secondCamera->GetViewMtrx());
-		cb.mProjection = XMMatrixTranspose(_secondCamera->GetProjectionMtrx());
-		_eyePos = _secondCamera->GetEye();
-	}
+	cb.mView = XMMatrixTranspose(viewMatrix);
+	cb.mProjection = XMMatrixTranspose(projMatrix);
+
 	//Set lighting for the constant buffer
 	cb.DiffuseLight = _diffuseLight;
 	cb.DiffuseMtrl = _diffuseMaterial;
@@ -475,140 +496,161 @@ void Application::Draw()
 	cb.SpecularLight = _specularLight;
 	cb.SpecularMtrl = _specularMtrl;
 	cb.SpecularPower = _specularPower;
-	cb.EyePosW = _eyePos;
+	cb.EyePosW = eyePos;
+	cb.gTime = _gTime;
 
 	//Set the vertex and pixel shader
 	_pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
 	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
-    _pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
 	_pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
 
 	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
+
 	RenderObjects(stride, offset, cb);
-   _pSwapChain->Present(0, 0);
+
+	_pImmediateContext->VSSetShader(_pWaterVertexShader, nullptr, 0);
+	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	_pImmediateContext->PSSetShader(_pWaterPixelShader, nullptr, 0);
+	_ocean->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
+
+	_pSwapChain->Present(0, 0);
+
+
 }
 
 void Application::UpdateCamera(static float t)
 {
 	if (GetAsyncKeyState(VK_DOWN))
-	{
 		_pImmediateContext->RSSetState(_solidState);
-	}
 
 	if (GetAsyncKeyState(VK_UP))
-	{
 		_pImmediateContext->RSSetState(_wireFrame);
-	}
 
 	if (GetAsyncKeyState(0x31))
-	{
 		_camSelection = 0;
-	}
-
 	if (GetAsyncKeyState(0x32))
-	{
 		_camSelection = 1;
-	}
 	if (GetAsyncKeyState(0x33))
-	{
 		_camSelection = 2;
-	}
+	if (GetAsyncKeyState(0x34))
+		_camSelection = 3;
+	if (GetAsyncKeyState(0x35))
+		_camSelection = 4;
 
-	if (GetAsyncKeyState(VK_LEFT))
+	if (_camSelection == 0)
 	{
-		_camera->atSelection = false;
-		_secondCamera->atSelection = false;
+		_mouse->ReleaseMouse();
+		viewMatrix = _fixedCam->GetViewMtrx();
+		eyePos = _fixedCam->GetEye();
+		projMatrix = _fixedCam->GetProjectionMtrx();
 	}
 
-	if (GetAsyncKeyState(VK_RIGHT))
+	if (_camSelection == 1)
 	{
-		_camera->atSelection = true;
-		_secondCamera->atSelection = true;
+		_mouse->ReleaseMouse();
+		viewMatrix = _topDownCam->GetViewMtrx();
+		eyePos = _topDownCam->GetEye();
+		projMatrix = _topDownCam->GetProjectionMtrx();
 	}
-	if (_camera->atSelection == false)
+
+	if (_camSelection == 2)
 	{
-		XMFLOAT3 lookToVect = _camera->GetTo(); //Firstly get our get to vector
-		XMFLOAT3 camPos = _camera->GetEye(); //Secondly get our cameras position
-		//Get the distance between the two vectors by finding the difference of each coord
-		XMFLOAT3 distance;
-		distance.x = lookToVect.x - camPos.x;
-		distance.y = lookToVect.y - camPos.y;
-		distance.z = lookToVect.z - camPos.z;
+		_debugCamera->_restrictMouse = true;
+		_mouse->RestrictMouse(_hWnd);
+		_mouse->ReadMouse();
+		_mouse->ProcessInput();
+		_mouse->GetMousePosition(x, y);
+		_debugCamera->HandleMouse(x, y);
 
-		//Normalise the vector to get the direction when it equals 1
-		XMVECTOR dirVector = XMLoadFloat3(&distance);
-		XMVECTOR XMVector3Normalize(dirVector);
-		XMStoreFloat3(&distance, dirVector);
-
-		float strafe = _camera->GetEye().x;
-
-		if (GetAsyncKeyState(0x57))
-		{
-			//Create a new position that is equal to the current position plus the direction multiplied by a small value
-			XMFLOAT3 distMoved = XMFLOAT3(camPos.x + distance.x * 0.001f, camPos.y + distance.y * 0.001f, camPos.z + distance.z * 0.001f);
-			_camera->SetPosition(distMoved);
-		}
-		else if (GetAsyncKeyState(0x53))
-		{
-			//For going backwards, simply minus the position rather than plusing
-			XMFLOAT3 distMoved = XMFLOAT3(camPos.x - distance.x * 0.001f, camPos.y - distance.y * 0.001f, camPos.z - distance.z * 0.001f);
-			_camera->SetPosition(distMoved);
-		}
-		else if (GetAsyncKeyState(0x41))
-		{
-			//Move camera position left
-			_camera->SetPosition(XMFLOAT3(strafe -= 0.01f, camPos.y, camPos.z));
-			_camera->SetTo(XMFLOAT3(lookToVect.x -= 0.01f, lookToVect.y, lookToVect.z));
-		}
-		else if (GetAsyncKeyState(0x44))
-		{
-			//move camera position right
-			_camera->SetPosition(XMFLOAT3(strafe += 0.01f, camPos.y, camPos.z));
-			_camera->SetTo(XMFLOAT3(lookToVect.x += 0.01f, lookToVect.y, lookToVect.z));
-		}
+		viewMatrix = _debugCamera->GetViewMtrx();
+		eyePos = _debugCamera->GetEye();
+		projMatrix = _debugCamera->GetProjectionMtrx();
 	}
-	_camera->Update();
-	_secondCamera->Update();
+
+	if (_camSelection == 3)
+	{
+		_mouse->ReleaseMouse();
+		viewMatrix = _thirdPersonCam->GetViewMtrx();
+		eyePos = _thirdPersonCam->GetEye();
+		projMatrix = _thirdPersonCam->GetProjectionMtrx();
+	}
+
+	if (_camSelection == 4)
+	{
+		_mouse->ReleaseMouse();
+		viewMatrix = _firstPersonCam->GetViewMtrx();
+		eyePos = _firstPersonCam->GetEye();
+		projMatrix = _firstPersonCam->GetProjectionMtrx();
+	}
+	_fixedCam->Update();
+	_topDownCam->Update();
+	_debugCamera->Update();
+	_thirdPersonCam->Update();
+	_firstPersonCam->Update();
 }
 
 void Application::UpdateObjects(static float t)
 {
 	if ((_rotationValue != _rotationMax) && _halfRotation == false)
-	{
 		_rotationValue += 0.5;
-	}
 	else if (_rotationValue == _rotationMax)
-	{
 		_halfRotation = true;
-	}
 	else if ((_halfRotation == true) && _rotationValue != _rotationMin)
-	{
 		_rotationValue -= 0.5;
-	}
 	else if ((_rotationValue == _rotationMin) && _halfRotation == true)
-	{
 		_halfRotation = false;
-	}
-	
+
 	_cube->Update(XMMatrixRotationZ(t) * XMMatrixTranslation(_planetPos.x + _rotationValue, _planetPos.y, _planetPos.z) * XMMatrixRotationY(t));
 	_pyramid->Update(XMMatrixTranslation(5, 3, 1));
-	_grid->Update(XMMatrixScaling(5, 5, 5) * XMMatrixTranslation(-3, -5, 0));
+	_grid->Update(XMMatrixScaling(2, 2, 2) * XMMatrixTranslation(-3, -5, 0));
+	_ocean->Update(XMMatrixScaling(7.5,7.5,7.5) * XMMatrixTranslation(-3, -5, 0));
 	_testObject->Update(XMMatrixRotationY(t) * XMMatrixTranslation(0, 0, 3));
-	_ship->Update(XMMatrixScaling(0.2, 0.2, 0.2)* XMMatrixTranslation(2, -5.5, 2));
+	_mine->Update(XMMatrixScaling(0.02, 0.02, 0.02) * XMMatrixTranslation(9, -5, 2));
+	_island->Update(XMMatrixScaling(0.7, 0.4, 0.7) *XMMatrixTranslation(-100, -8, -80));
+	_skyBox->Update(XMMatrixRotationX(3.141) * XMMatrixScaling(500.5, 500.5, 500.5) * XMMatrixRotationZ(3.14) * XMMatrixTranslation(eyePos.x, eyePos.y, eyePos.z));
+	_desert->Update(XMMatrixScaling(0.08, 0.2, 0.13) * XMMatrixTranslation(120.0f, -18.0f, 50.0f));
+	if (_camSelection == 3)
+	{
+		_ship->Move();
+		XMFLOAT3 tempPos = _ship->GetPosition();
+		XMFLOAT3 tempTo = _ship->GetMtrxLookTo();
+		_thirdPersonCam->SetPosition(XMFLOAT3(tempPos.x + (tempTo.z * 2.0),tempPos.y+25,tempPos.z + (tempTo.x * 2.0)));
+		_thirdPersonCam->SetTo(XMFLOAT3(-(tempTo.z),tempTo.y-3,-(tempTo.x)));
+		_thirdPersonCam->SetUp(_ship->GetMtrxUp());
+	}
+	if (_camSelection == 4)
+	{
+		_ship->Move();
+		XMFLOAT3 tempPos = _ship->GetPosition();
+		XMFLOAT3 tempTo = _ship->GetMtrxLookTo();
+		_firstPersonCam->SetPosition(XMFLOAT3(tempPos.x + (tempTo.z * -5.5), tempPos.y + 10, tempPos.z + (tempTo.x * -5.5)));
+		_firstPersonCam->SetTo(XMFLOAT3(-(tempTo.z), tempTo.y - 3, -(tempTo.x)));
+		_firstPersonCam->SetUp(_ship->GetMtrxUp());
+	}
 }
 
-void Application::RenderObjects(UINT stride,UINT offset, ConstantBuffer cb)
+void Application::RenderObjects(UINT stride, UINT offset, ConstantBuffer cb)
 {
-	_cube->Render(_pImmediateContext, cb, _pConstantBuffer, 36, stride, offset);
-	_testObject->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
+
+	_skyBox->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
+	//_cube->Render(_pImmediateContext, cb, _pConstantBuffer, 36, stride, offset);
+	//_testObject->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
 	_ship->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
-	_pyramid->Render(_pImmediateContext, cb, _pConstantBuffer, 18, stride, offset);
-	_grid->Render(_pImmediateContext, cb, _pConstantBuffer, 96, stride, offset);
+	//_pyramid->Render(_pImmediateContext, cb, _pConstantBuffer, 18, stride, offset);
+	//_grid->Render(_pImmediateContext, cb, _pConstantBuffer, 96, stride, offset);
+	_desert->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
+	_mine->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
+	_island->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
 }
 
 void Application::CreateObjects()
 {
+	_island = new Object("islandTest.obj", _pd3dDevice, false);
+	_island->LoadTexture(_pd3dDevice, L"island1.dds");
+
 	_testObject = new Object("Hercules.obj", _pd3dDevice, false);
 	_testObject->LoadTexture(_pd3dDevice, L"Hercules_COLOR.dds");
 
@@ -619,24 +661,40 @@ void Application::CreateObjects()
 	_pyramid->LoadTexture(_pd3dDevice, L"Crate_COLOR.dds");
 
 	_grid = new Grid(_pd3dDevice);
-	_grid->LoadTexture(_pd3dDevice, L"Crate_COLOR.dds");
+	_grid->LoadTexture(_pd3dDevice, L"OceanTXT.dds");
 
-	_ship = new Object("ship2.obj", _pd3dDevice, true);
-	_ship->LoadTexture(_pd3dDevice, L"Hercules_COLOR.dds");
+	_ocean = new Object("finalWavesPlease.obj", _pd3dDevice, false);
+	_ocean->LoadTexture(_pd3dDevice, L"OceanTXT.dds");
 
+	_ship = new Ship("battleship.obj", _pd3dDevice, true);
+	_ship->LoadTexture(_pd3dDevice, L"battleship.dds");
+
+	_mine = new Object("SeaMine.obj", _pd3dDevice, false);
+	_mine->LoadTexture(_pd3dDevice, L"SeaMine.dds");
+
+	_skyBox = new Object("skyBox.obj", _pd3dDevice, true);
+	_skyBox->LoadTexture(_pd3dDevice, L"skyBox.dds");
+
+	_desert = new Object("desert.obj", _pd3dDevice, true);
+	_desert->LoadTexture(_pd3dDevice, L"desert.dds");
+	_thirdPersonCam = new Camera(_ship->GetPosition(), XMFLOAT3(0.0f, 0.0f, 0.0f), _ship->GetMtrxUp(), _ship->GetMtrxLookTo(), _WindowWidth, _WindowHeight, 0.01f, 300.0f);
+	_thirdPersonCam->atSelection = false;
+	_firstPersonCam = new Camera(_ship->GetPosition(), XMFLOAT3(0.0f, 0.0f, 0.0f), _ship->GetMtrxUp(), _ship->GetMtrxLookTo(), _WindowWidth, _WindowHeight, 0.01f, 300.0f);
+	_firstPersonCam->atSelection = false;
 }
 
 void Application::CreateCameras()
 {
-	XMFLOAT3 _pos = XMFLOAT3(0.0f, 6.0f, -15.0f);
-	XMFLOAT3 _at = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	XMFLOAT3 _up = XMFLOAT3(0.0f, 1.0f, 0.0f);
-	XMFLOAT3 _to = XMFLOAT3(0.0f, 0.0f, 5.0f);
+	XMFLOAT3 _debugEyePos = XMFLOAT3(0.0f, 3.0f, -15.0f);
+	XMFLOAT3 _debugUp = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	XMFLOAT3 _debugAt = XMFLOAT3(0.0f, 3.0f, 3.0f);
+	XMFLOAT3 _debugTo = XMFLOAT3(0.0f, 0.0f, 1.0f);
 
-	XMFLOAT3 _secondEyePos = XMFLOAT3(2.0f, 20.0f, -2.0f);
-	XMFLOAT3 _secondAt = XMFLOAT3(0.0f, 0.0f, -2.0f);
-	XMFLOAT3 _secondUp = XMFLOAT3(0.0f, 1.0f, 0.0f);
-	XMFLOAT3 _secondTo = XMFLOAT3(10.0f, 60.0f, 340.0f);
-	_camera = new Camera(_pos, _at, _up, _to, _WindowWidth, _WindowHeight, 0.01f, 100.0f);
-	_secondCamera = new Camera(_secondEyePos, _secondAt, _secondUp, _secondTo, _WindowWidth, _WindowHeight, 0.01f, 100.0f);
+	_debugCamera = new DebugCam(_debugEyePos, _debugAt, _debugUp, _debugTo, _WindowWidth, _WindowHeight, 0.01f, 500.0f);
+	_debugCamera->atSelection = false;
+
+	_fixedCam = new Camera(XMFLOAT3(-3.0f, 2.0f, -35.0f), XMFLOAT3(-3.0f, -10.0f, 6.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), _WindowWidth, _WindowHeight, 0.01f, 300.0f);
+	_fixedCam->atSelection = true;
+	_topDownCam = new Camera(XMFLOAT3(3.0f, 100.0f, 0.0f), XMFLOAT3(3.0f, 0.0f, 3.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), _WindowWidth, _WindowHeight, 0.01f, 300.0f);
+	_topDownCam->atSelection = true;
 }

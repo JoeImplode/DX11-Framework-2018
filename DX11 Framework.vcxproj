@@ -373,18 +373,25 @@
       </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <FxCompile Include="WaveShader.fx">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </FxCompile>
+  </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Cube.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
+    <ClCompile Include="DebugCam.cpp" />
     <ClCompile Include="DX11 Framework.cpp" />
     <ClCompile Include="Grid.cpp" />
+    <ClCompile Include="MouseEvent.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="OBJLoader.cpp" />
     <ClCompile Include="Primitives.cpp" />
     <ClCompile Include="Pyramid.cpp" />
+    <ClCompile Include="Ship.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
@@ -395,12 +402,15 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Cube.h" />
     <ClInclude Include="DDSTextureLoader.h" />
+    <ClInclude Include="DebugCam.h" />
     <ClInclude Include="Grid.h" />
+    <ClInclude Include="MouseEvent.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="OBJLoader.h" />
     <ClInclude Include="Primitives.h" />
     <ClInclude Include="Pyramid.h" />
     <CLInclude Include="resource.h" />
+    <ClInclude Include="Ship.h" />
     <ClInclude Include="Structures.h" />
     <ResourceCompile Include="DX11 Framework.rc" />
   </ItemGroup>

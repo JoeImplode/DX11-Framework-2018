@@ -3,8 +3,6 @@
 Object::Object(char* fileName, ID3D11Device* device, bool invertTextCoords)
 {
 	_objectTexture = nullptr;
-
-	//Load an OBJ file and store it as the device
 	_objectMesh = OBJLoader::Load(fileName, device, invertTextCoords);
 }
 
@@ -15,7 +13,6 @@ Object::~Object()
 
 void Object::LoadTexture(ID3D11Device* device, const wchar_t* fileName)
 {
-	//Load a texture and set it to objectTexture
 	CreateDDSTextureFromFile(device, fileName, nullptr, &_objectTexture);
 }
 
@@ -34,4 +31,28 @@ void Object::Render(ID3D11DeviceContext* context,ConstantBuffer cb, ID3D11Buffer
 void Object::Update(XMMATRIX objectTransformation)
 {
 	XMStoreFloat4x4(&_objectMatrix, objectTransformation);
+}
+XMFLOAT4X4 Object::GetObjMatrix()
+{
+	return this->_objectMatrix;
+}
+
+XMFLOAT3 Object::GetMtrxLookTo()
+{
+	return XMFLOAT3(this->_objectMatrix._13, this->_objectMatrix._23, this->_objectMatrix._33);
+}
+
+XMFLOAT3 Object::GetMtrxUp()
+{
+	return XMFLOAT3(this->_objectMatrix._12, this->_objectMatrix._22, this->_objectMatrix._32);
+}
+
+XMFLOAT3 Object::GetMtrxRight()
+{
+	return XMFLOAT3(this->_objectMatrix._11, this->_objectMatrix._21, this->_objectMatrix._31);
+}
+
+XMFLOAT3 Object::GetMtrxPosition()
+{
+	return XMFLOAT3(this->_objectMatrix._14, this->_objectMatrix._24, this->_objectMatrix._34);
 }

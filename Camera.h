@@ -35,6 +35,7 @@ public:
 	void SetLookat(XMFLOAT3 at);
 	void SetUp(XMFLOAT3 up);
 	void SetTo(XMFLOAT3 to);
+	void UpdateView(XMMATRIX viewMatrix);
 
 	XMFLOAT3 GetAt();
 	XMFLOAT3 GetTo();

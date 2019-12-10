@@ -9,6 +9,18 @@
       <UniqueIdentifier>{2c3d4c8c-5d1a-459a-a05a-a4e4b608a44e}</UniqueIdentifier>
       <Extensions>fx;fxh;hlsl</Extensions>
     </Filter>
+    <Filter Include="Source">
+      <UniqueIdentifier>{624c640f-67c8-48ec-93f1-48c0e71cb727}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Mouse">
+      <UniqueIdentifier>{a7411985-9755-4e4d-9827-da6cff326077}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Objects">
+      <UniqueIdentifier>{b6dc39a4-54bc-4ccc-9734-08d36657acec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Cameras">
+      <UniqueIdentifier>{03a1bbd7-0fad-4d9b-a517-535e31bd84d9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
@@ -21,18 +33,48 @@
     <ClInclude Include="Primitives.h" />
     <ClInclude Include="Pyramid.h" />
     <ClInclude Include="Grid.h" />
+    <ClInclude Include="DebugCam.h" />
+    <ClInclude Include="MouseEvent.h" />
+    <ClInclude Include="Ship.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Application.cpp" />
-    <ClCompile Include="DX11 Framework.cpp" />
-    <ClCompile Include="DDSTextureLoader.cpp" />
-    <ClCompile Include="OBJLoader.cpp" />
-    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Object.cpp" />
-    <ClCompile Include="Cube.cpp" />
-    <ClCompile Include="Primitives.cpp" />
-    <ClCompile Include="Pyramid.cpp" />
-    <ClCompile Include="Grid.cpp" />
+    <ClCompile Include="DX11 Framework.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="DDSTextureLoader.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Application.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="OBJLoader.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="MouseEvent.cpp">
+      <Filter>Source\Mouse</Filter>
+    </ClCompile>
+    <ClCompile Include="Primitives.cpp">
+      <Filter>Source\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Pyramid.cpp">
+      <Filter>Source\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Grid.cpp">
+      <Filter>Source\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Cube.cpp">
+      <Filter>Source\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugCam.cpp">
+      <Filter>Source\Cameras</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Source\Cameras</Filter>
+    </ClCompile>
+    <ClCompile Include="Ship.cpp">
+      <Filter>Source\Objects</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">
@@ -49,5 +91,10 @@
     <ResourceCompile Include="DX11 Framework.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="WaveShader.fx">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

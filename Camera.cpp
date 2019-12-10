@@ -20,20 +20,19 @@ Camera::~Camera()
 
 void Camera::Update()
 {
-
 	//firstly we need to change our floats to vectors
 	XMVECTOR eye = XMLoadFloat3(&_eye);
 	XMVECTOR at = XMLoadFloat3(&_at);
 	XMVECTOR up = XMLoadFloat3(&_up);
 	XMVECTOR to = XMLoadFloat3(&_to);
-	//Afterwards we store the floats in some 4x4 matrices
+	//Afterwards we store the floats in some 4x4 matrices]
 	if (atSelection == true)
 	{
 		XMStoreFloat4x4(&_view, XMMatrixLookAtLH(eye, at, up));
 	}
 	else if (atSelection == false)
 	{
-		XMStoreFloat4x4(&_view, XMMatrixLookAtLH(eye, to, up));
+		XMStoreFloat4x4(&_view, XMMatrixLookToLH(eye, to, up));
 	}
 	XMStoreFloat4x4(&_projection, XMMatrixPerspectiveFovLH(XM_PIDIV2, _windowWidth / (FLOAT)_windowHeight, _nearDepth, _farDepth));
 }
@@ -98,4 +97,9 @@ void Camera::Reshape(FLOAT windowWidth, FLOAT windowHeight, FLOAT nearDepth, FLO
 	_windowHeight = windowHeight;
 	_nearDepth = nearDepth;
 	_farDepth = farDepth;
+}
+
+void Camera::UpdateView(XMMATRIX viewMatrix)
+{
+	XMStoreFloat4x4(&_view, viewMatrix);
 }

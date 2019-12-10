@@ -38,6 +38,8 @@ cbuffer ConstantBuffer : register(b0)
 	float4 SpecularLight;
 	float  SpecularPower;
 	float3 EyePosW;
+	float4 pad1;
+	float4 pad2;
 }
 
 //--------------------------------------------------------------------------------------
