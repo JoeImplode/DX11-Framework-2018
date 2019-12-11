@@ -389,6 +389,7 @@
     <ClCompile Include="MouseEvent.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="OBJLoader.cpp" />
+    <ClCompile Include="ObjPositionLoader.cpp" />
     <ClCompile Include="Primitives.cpp" />
     <ClCompile Include="Pyramid.cpp" />
     <ClCompile Include="Ship.cpp" />
@@ -407,6 +408,7 @@
     <ClInclude Include="MouseEvent.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="OBJLoader.h" />
+    <ClInclude Include="ObjPositionLoader.h" />
     <ClInclude Include="Primitives.h" />
     <ClInclude Include="Pyramid.h" />
     <CLInclude Include="resource.h" />

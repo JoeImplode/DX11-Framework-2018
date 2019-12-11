@@ -36,6 +36,7 @@
     <ClInclude Include="DebugCam.h" />
     <ClInclude Include="MouseEvent.h" />
     <ClInclude Include="Ship.h" />
+    <ClInclude Include="ObjPositionLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Object.cpp" />
@@ -75,6 +76,7 @@
     <ClCompile Include="Ship.cpp">
       <Filter>Source\Objects</Filter>
     </ClCompile>
+    <ClCompile Include="ObjPositionLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">

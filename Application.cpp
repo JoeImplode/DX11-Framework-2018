@@ -35,7 +35,7 @@ Application::Application()
 	_pPixelShader =				nullptr;
 	_pVertexLayout =			nullptr;
 	_pConstantBuffer =			nullptr;
-
+	_loader =					new ObjPositionLoader();
 	_pTextureRV =				nullptr;
 	_pSamplerLinear =			nullptr;
 	
@@ -44,7 +44,7 @@ Application::Application()
 	ID3D11RasterizerState*		_wireFrame;
 	ID3D11RasterizerState*		_solidState;
 
-	CreateCameras();
+	
 
 	_Origin.x = 0, _Origin.y = 0, _Origin.z = 0;
 	_planetPos.x = _Origin.x + 2, _planetPos.y = 0, _planetPos.z = _Origin.z + 2;
@@ -191,6 +191,7 @@ HRESULT Application::InitShadersAndInputLayout()
 	pVSBlob->Release();
 
 	CreateObjects();
+	CreateCameras();
 
 	if (FAILED(hr))
         return hr;
@@ -412,6 +413,26 @@ HRESULT Application::InitDevice()
 
 	_mouse->CreateMouseDevice(_hWnd, _hInst);
 
+	D3D11_BLEND_DESC blendDesc;
+	ZeroMemory(&blendDesc, sizeof(blendDesc));
+
+	D3D11_RENDER_TARGET_BLEND_DESC rtbd;
+	ZeroMemory(&rtbd, sizeof(rtbd));
+
+	rtbd.BlendEnable = true;
+	rtbd.SrcBlend = D3D11_BLEND_SRC_COLOR;
+	rtbd.DestBlend = D3D11_BLEND_BLEND_FACTOR;
+	rtbd.BlendOp = D3D11_BLEND_OP_ADD;
+	rtbd.SrcBlendAlpha = D3D11_BLEND_ONE;
+	rtbd.DestBlendAlpha = D3D11_BLEND_ZERO;
+	rtbd.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	rtbd.RenderTargetWriteMask = D3D10_COLOR_WRITE_ENABLE_ALL;
+
+	blendDesc.AlphaToCoverageEnable = false;
+	blendDesc.RenderTarget[0] = rtbd;
+
+	_pd3dDevice->CreateBlendState(&blendDesc, &_transparency);
+	
 
     if (FAILED(hr))
         return hr;
@@ -437,6 +458,7 @@ void Application::Cleanup()
 	if (_depthStencilBuffer) _depthStencilBuffer->Release();
 	if (_wireFrame) _wireFrame->Release();
 	if (_solidState) _solidState->Release();
+	if (_transparency) _transparency->Release();
 	_mouse->~MouseEvent();
 }
 
@@ -507,9 +529,14 @@ void Application::Draw()
 
 	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
+	//Fine tune the blending equation
+	//Set the default blend state for opaque objects
+	float blendFactor[] = { 0.2f,0.2f,0.2f,0.2f };
+	_pImmediateContext->OMSetBlendState(0, 0, 0xfffffff);
 
 	RenderObjects(stride, offset, cb);
 
+	_pImmediateContext->OMSetBlendState(_transparency, blendFactor, 0xfffffff);
 	_pImmediateContext->VSSetShader(_pWaterVertexShader, nullptr, 0);
 	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
 	_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
@@ -602,16 +629,8 @@ void Application::UpdateObjects(static float t)
 		_rotationValue -= 0.5;
 	else if ((_rotationValue == _rotationMin) && _halfRotation == true)
 		_halfRotation = false;
-
+	
 	_cube->Update(XMMatrixRotationZ(t) * XMMatrixTranslation(_planetPos.x + _rotationValue, _planetPos.y, _planetPos.z) * XMMatrixRotationY(t));
-	_pyramid->Update(XMMatrixTranslation(5, 3, 1));
-	_grid->Update(XMMatrixScaling(2, 2, 2) * XMMatrixTranslation(-3, -5, 0));
-	_ocean->Update(XMMatrixScaling(7.5,7.5,7.5) * XMMatrixTranslation(-3, -5, 0));
-	_testObject->Update(XMMatrixRotationY(t) * XMMatrixTranslation(0, 0, 3));
-	_mine->Update(XMMatrixScaling(0.02, 0.02, 0.02) * XMMatrixTranslation(9, -5, 2));
-	_island->Update(XMMatrixScaling(0.7, 0.4, 0.7) *XMMatrixTranslation(-100, -8, -80));
-	_skyBox->Update(XMMatrixRotationX(3.141) * XMMatrixScaling(500.5, 500.5, 500.5) * XMMatrixRotationZ(3.14) * XMMatrixTranslation(eyePos.x, eyePos.y, eyePos.z));
-	_desert->Update(XMMatrixScaling(0.08, 0.2, 0.13) * XMMatrixTranslation(120.0f, -18.0f, 50.0f));
 	if (_camSelection == 3)
 	{
 		_ship->Move();
@@ -644,10 +663,12 @@ void Application::RenderObjects(UINT stride, UINT offset, ConstantBuffer cb)
 	_desert->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
 	_mine->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
 	_island->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
+	_seaBed->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
 }
 
 void Application::CreateObjects()
 {
+
 	_island = new Object("islandTest.obj", _pd3dDevice, false);
 	_island->LoadTexture(_pd3dDevice, L"island1.dds");
 
@@ -670,31 +691,61 @@ void Application::CreateObjects()
 	_ship->LoadTexture(_pd3dDevice, L"battleship.dds");
 
 	_mine = new Object("SeaMine.obj", _pd3dDevice, false);
-	_mine->LoadTexture(_pd3dDevice, L"SeaMine.dds");
+	_mine->LoadTexture(_pd3dDevice, L"skyBox.dds");
 
 	_skyBox = new Object("skyBox.obj", _pd3dDevice, true);
 	_skyBox->LoadTexture(_pd3dDevice, L"skyBox.dds");
 
+	_seaBed = new Object("finalWavesPlease.obj",_pd3dDevice,true);
+	_seaBed->LoadTexture(_pd3dDevice, L"desert.dds");
+
 	_desert = new Object("desert.obj", _pd3dDevice, true);
 	_desert->LoadTexture(_pd3dDevice, L"desert.dds");
-	_thirdPersonCam = new Camera(_ship->GetPosition(), XMFLOAT3(0.0f, 0.0f, 0.0f), _ship->GetMtrxUp(), _ship->GetMtrxLookTo(), _WindowWidth, _WindowHeight, 0.01f, 300.0f);
+	_thirdPersonCam = new Camera(_ship->GetPosition(), XMFLOAT3(0.0f, 0.0f, 0.0f), _ship->GetMtrxUp(), _ship->GetMtrxLookTo(), _WindowWidth, _WindowHeight, 0.01f, 500.0f);
 	_thirdPersonCam->atSelection = false;
-	_firstPersonCam = new Camera(_ship->GetPosition(), XMFLOAT3(0.0f, 0.0f, 0.0f), _ship->GetMtrxUp(), _ship->GetMtrxLookTo(), _WindowWidth, _WindowHeight, 0.01f, 300.0f);
+	_firstPersonCam = new Camera(_ship->GetPosition(), XMFLOAT3(0.0f, 0.0f, 0.0f), _ship->GetMtrxUp(), _ship->GetMtrxLookTo(), _WindowWidth, _WindowHeight, 0.01f, 500.0f);
 	_firstPersonCam->atSelection = false;
+
+	XMFLOAT3 tempPosition;
+	_loader->OpenFile("positions.txt");
+	tempPosition = _loader->ReadFile();
+	_pyramid->Update(XMMatrixTranslation(tempPosition.x, tempPosition.y, tempPosition.z));
+	tempPosition = _loader->ReadFile();
+	_grid->Update(XMMatrixScaling(2, 2, 2) * XMMatrixTranslation(tempPosition.x, tempPosition.y, tempPosition.z));
+	tempPosition = _loader->ReadFile();
+	_ocean->Update(XMMatrixScaling(7.5, 7.5, 7.5) * XMMatrixTranslation(tempPosition.x, tempPosition.y, tempPosition.z));
+	tempPosition = _loader->ReadFile();
+	_seaBed->Update(XMMatrixScaling(7.5, 7.5, 7.5) * XMMatrixTranslation(tempPosition.x, tempPosition.y, tempPosition.z));
+	tempPosition = _loader->ReadFile();
+	_mine->Update(XMMatrixScaling(0.07, 0.07, 0.07) * XMMatrixTranslation(tempPosition.x, tempPosition.y, tempPosition.z));
+	tempPosition = _loader->ReadFile();
+	_island->Update(XMMatrixScaling(0.7, 0.4, 0.7) * XMMatrixTranslation(tempPosition.x, tempPosition.y, tempPosition.z));
+	tempPosition = _loader->ReadFile();
+	_skyBox->Update(XMMatrixRotationX(3.141) * XMMatrixScaling(500.5, 500.5, 500.5) * XMMatrixRotationZ(3.14) * XMMatrixTranslation(tempPosition.x, tempPosition.y, tempPosition.z));
+	tempPosition = _loader->ReadFile();
+	_desert->Update(XMMatrixScaling(0.08, 0.2, 0.13) * XMMatrixTranslation(tempPosition.x, tempPosition.y, tempPosition.z));
+	
+
 }
 
 void Application::CreateCameras()
 {
-	XMFLOAT3 _debugEyePos = XMFLOAT3(0.0f, 3.0f, -15.0f);
+	
+	XMFLOAT3 _debugEyePos = XMFLOAT3(0.0f, 30.0f, -15.0f);
 	XMFLOAT3 _debugUp = XMFLOAT3(0.0f, 1.0f, 0.0f);
 	XMFLOAT3 _debugAt = XMFLOAT3(0.0f, 3.0f, 3.0f);
 	XMFLOAT3 _debugTo = XMFLOAT3(0.0f, 0.0f, 1.0f);
 
-	_debugCamera = new DebugCam(_debugEyePos, _debugAt, _debugUp, _debugTo, _WindowWidth, _WindowHeight, 0.01f, 500.0f);
-	_debugCamera->atSelection = false;
+	XMFLOAT3 tempPosition;
+	tempPosition = _loader->ReadFile();
 
-	_fixedCam = new Camera(XMFLOAT3(-3.0f, 2.0f, -35.0f), XMFLOAT3(-3.0f, -10.0f, 6.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), _WindowWidth, _WindowHeight, 0.01f, 300.0f);
+	_debugCamera = new DebugCam(XMFLOAT3(tempPosition.x,tempPosition.y,tempPosition.z), _debugAt, _debugUp, _debugTo, _WindowWidth, _WindowHeight, 0.01f, 500.0f);
+	_debugCamera->atSelection = false;
+	tempPosition = _loader->ReadFile();
+	_fixedCam = new Camera(XMFLOAT3(tempPosition.x, tempPosition.y, tempPosition.z), XMFLOAT3(-35.0f, -10.0f, 65.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), _WindowWidth, _WindowHeight, 0.01f, 500.0f);
 	_fixedCam->atSelection = true;
-	_topDownCam = new Camera(XMFLOAT3(3.0f, 100.0f, 0.0f), XMFLOAT3(3.0f, 0.0f, 3.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), _WindowWidth, _WindowHeight, 0.01f, 300.0f);
+	tempPosition = _loader->ReadFile();
+	_topDownCam = new Camera(XMFLOAT3(tempPosition.x, tempPosition.y, tempPosition.z), XMFLOAT3(3.0f, 0.0f, 3.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), _WindowWidth, _WindowHeight, 0.01f, 500.0f);
 	_topDownCam->atSelection = true;
+	_loader->CloseFile();
 }

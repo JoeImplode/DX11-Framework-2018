@@ -23,6 +23,7 @@
 #include "MouseEvent.h"
 
 #include <string>
+#include "ObjPositionLoader.h"
 using namespace std;
 using namespace DirectX;
 
@@ -40,7 +41,7 @@ private:
 	ID3D11DeviceContext*    _pImmediateContext;
 	IDXGISwapChain*         _pSwapChain;
 	ID3D11RenderTargetView* _pRenderTargetView;
-
+	ID3D11BlendState*		_transparency;
 	ID3D11VertexShader*     _pVertexShader;
 	ID3D11PixelShader*      _pPixelShader;
 	ID3D11VertexShader*		_pWaterVertexShader;
@@ -75,6 +76,10 @@ private:
 	Object*					_island;
 	Object*					_skyBox;
 	Object*					_desert;
+	Object*					_seaBed;
+
+	ObjPositionLoader*		_loader;
+
 	Cube*					_cube;
 	Pyramid*				_pyramid;
 	Grid*					_grid;
