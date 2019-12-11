@@ -42,14 +42,13 @@ private:
 	IDXGISwapChain*         _pSwapChain;
 	ID3D11RenderTargetView* _pRenderTargetView;
 	ID3D11BlendState*		_transparency;
+
 	ID3D11VertexShader*     _pVertexShader;
 	ID3D11PixelShader*      _pPixelShader;
 	ID3D11VertexShader*		_pWaterVertexShader;
 	ID3D11PixelShader*		_pWaterPixelShader;
-	ID3D11InputLayout*      _pVertexLayout;
 
-	ID3D11ShaderResourceView* _pTextureRV;
-	ID3D11ShaderResourceView* _TankTexture;
+	ID3D11InputLayout*      _pVertexLayout;
 
 	ID3D11SamplerState*		_pSamplerLinear;
 	ID3D11Buffer*           _pConstantBuffer;
@@ -78,11 +77,11 @@ private:
 	Object*					_desert;
 	Object*					_seaBed;
 
-	ObjPositionLoader*		_loader;
-
 	Cube*					_cube;
 	Pyramid*				_pyramid;
 	Grid*					_grid;
+
+	ObjPositionLoader*		_loader;
 
 	//Cameras
 	DebugCam*				_debugCamera;
@@ -92,39 +91,38 @@ private:
 	Camera*					_firstPersonCam;
 
 	MouseEvent*				_mouse;
-	int x, y;
+	int						x, y;
 
-	XMMATRIX viewMatrix;
-	XMMATRIX projMatrix;
-	XMFLOAT3 eyePos;
+	XMMATRIX				viewMatrix;
+	XMMATRIX				projMatrix;
+	XMFLOAT3				eyePos;
 
 	//Depth stencil items
 	ID3D11DepthStencilView* _depthStencilView;
-	ID3D11Texture2D* _depthStencilBuffer;
-	ID3D11RasterizerState* _wireFrame;
-	ID3D11RasterizerState* _solidState;
+	ID3D11Texture2D*		_depthStencilBuffer;
+	ID3D11RasterizerState*	_wireFrame;
+	ID3D11RasterizerState*	_solidState;
 
-	float _rotationValue;
-	bool _halfRotation;
-	const float _rotationMax = 5.0f;
-	const float _rotationMin = 0.0f;
-	int _camSelection = 0;
-	int _screenWidth, _screenHeight;
+	float					_rotationValue;
+	bool					_halfRotation;
+	const float				_rotationMax = 5.0f;
+	const float				_rotationMin = 0.0f;
+	int						_camSelection = 0;
+	int						_screenWidth, _screenHeight;
+
+	UINT					_WindowHeight;
+	UINT					_WindowWidth;
 
 	void UpdateCamera(static float t);
 	void UpdateObjects(static float t);
 	void RenderObjects(UINT stride, UINT offset, ConstantBuffer cb);
 	void CreateObjects();
 	void CreateCameras();
-private:
 	HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow);
 	HRESULT InitDevice();
 	void Cleanup();
 	HRESULT CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
 	HRESULT InitShadersAndInputLayout();
-
-	UINT _WindowHeight;
-	UINT _WindowWidth;
 public:
 	Application();
 	~Application();

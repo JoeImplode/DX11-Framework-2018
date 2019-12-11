@@ -36,15 +36,12 @@ Application::Application()
 	_pVertexLayout =			nullptr;
 	_pConstantBuffer =			nullptr;
 	_loader =					new ObjPositionLoader();
-	_pTextureRV =				nullptr;
 	_pSamplerLinear =			nullptr;
 	
 	ID3D11DepthStencilView*		_depthStencilView;
 	ID3D11Texture2D*			_depthStencilBuffer;
 	ID3D11RasterizerState*		_wireFrame;
 	ID3D11RasterizerState*		_solidState;
-
-	
 
 	_Origin.x = 0, _Origin.y = 0, _Origin.z = 0;
 	_planetPos.x = _Origin.x + 2, _planetPos.y = 0, _planetPos.z = _Origin.z + 2;
@@ -64,13 +61,15 @@ Application::~Application()
 
 HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 {
+	RECT rc;
+	const HWND desktopSize = GetDesktopWindow();
+	GetWindowRect(desktopSize, &rc);
+
+	_WindowWidth = rc.right - rc.left;
+	_WindowHeight = rc.bottom - rc.top;
+
     if (FAILED(InitWindow(hInstance, nCmdShow)))
         return E_FAIL;
-
-    RECT rc;
-    GetClientRect(_hWnd, &rc);
-    _WindowWidth = rc.right - rc.left;
-    _WindowHeight = rc.bottom - rc.top;
 
     if (FAILED(InitDevice()))
     {
@@ -224,10 +223,10 @@ HRESULT Application::InitWindow(HINSTANCE hInstance, int nCmdShow)
 
     // Create window
     _hInst = hInstance;
-    RECT rc = {0, 0, 1280, 720};
+    RECT rc = {0, 0, _WindowWidth, _WindowHeight};
     AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
-    _hWnd = CreateWindow(L"TutorialWindowClass", L"DX11 Framework", WS_OVERLAPPEDWINDOW,
-                         CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
+    _hWnd = CreateWindow(L"TutorialWindowClass", L"DX11 Framework", WS_MAXIMIZE,
+                         CW_USEDEFAULT, CW_USEDEFAULT, rc.right-rc.left,rc.bottom-rc.top, nullptr, nullptr, hInstance,
                          nullptr);
 	if (!_hWnd)
 		return E_FAIL;
@@ -325,6 +324,7 @@ HRESULT Application::InitDevice()
     sd.SampleDesc.Count = 1;
     sd.SampleDesc.Quality = 0;
     sd.Windowed = TRUE;
+	sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
     for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++)
     {
@@ -544,8 +544,6 @@ void Application::Draw()
 	_ocean->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
 
 	_pSwapChain->Present(0, 0);
-
-
 }
 
 void Application::UpdateCamera(static float t)
@@ -724,8 +722,6 @@ void Application::CreateObjects()
 	_skyBox->Update(XMMatrixRotationX(3.141) * XMMatrixScaling(500.5, 500.5, 500.5) * XMMatrixRotationZ(3.14) * XMMatrixTranslation(tempPosition.x, tempPosition.y, tempPosition.z));
 	tempPosition = _loader->ReadFile();
 	_desert->Update(XMMatrixScaling(0.08, 0.2, 0.13) * XMMatrixTranslation(tempPosition.x, tempPosition.y, tempPosition.z));
-	
-
 }
 
 void Application::CreateCameras()

@@ -22,7 +22,7 @@ void Ship::Move()
 		SetPosition(XMFLOAT3(currPos.x + this->_objectMatrix._33 * velocity, currPos.y + this->_objectMatrix._23 * velocity, currPos.z + this->_objectMatrix._13 * velocity));
 
 	if (GetAsyncKeyState(0x41))
-		rotate = rotate - 0.0002;
+		rotate = rotate - 0.0003;
 	if (GetAsyncKeyState(0x44))
 		rotate = rotate + 0.0003;
 	
