@@ -17,6 +17,8 @@ private:
 	float			prevAngX;
 	float			prevAngY;
 
+	const float			velocity = 0.01;
+
 	XMMATRIX		tempView;
 	XMFLOAT3		_eyePos = XMFLOAT3(0.0f, 6.0f, -15.0f);
 

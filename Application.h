@@ -73,7 +73,6 @@ private:
 	Object*					_ocean;
 	Object*					_mine;
 	Object*					_island;
-	Object*					_skyBox;
 	Object*					_desert;
 	Object*					_seaBed;
 

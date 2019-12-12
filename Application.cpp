@@ -467,6 +467,11 @@ void Application::Update()
     // Update our time
     static float t = 0.0f;
 
+	if (GetAsyncKeyState(VK_ESCAPE))
+	{
+		exit(0);
+	}
+
     if (_driverType == D3D_DRIVER_TYPE_REFERENCE)
     {
         t += (float) XM_PI * 0.0125f;
@@ -545,6 +550,7 @@ void Application::Draw()
 
 	_pSwapChain->Present(0, 0);
 }
+
 
 void Application::UpdateCamera(static float t)
 {
@@ -652,7 +658,6 @@ void Application::UpdateObjects(static float t)
 void Application::RenderObjects(UINT stride, UINT offset, ConstantBuffer cb)
 {
 
-	_skyBox->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
 	//_cube->Render(_pImmediateContext, cb, _pConstantBuffer, 36, stride, offset);
 	//_testObject->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
 	_ship->Render(_pImmediateContext, cb, _pConstantBuffer, stride, offset);
@@ -666,7 +671,6 @@ void Application::RenderObjects(UINT stride, UINT offset, ConstantBuffer cb)
 
 void Application::CreateObjects()
 {
-
 	_island = new Object("islandTest.obj", _pd3dDevice, false);
 	_island->LoadTexture(_pd3dDevice, L"island1.dds");
 
@@ -689,16 +693,14 @@ void Application::CreateObjects()
 	_ship->LoadTexture(_pd3dDevice, L"battleship.dds");
 
 	_mine = new Object("SeaMine.obj", _pd3dDevice, false);
-	_mine->LoadTexture(_pd3dDevice, L"skyBox.dds");
-
-	_skyBox = new Object("skyBox.obj", _pd3dDevice, true);
-	_skyBox->LoadTexture(_pd3dDevice, L"skyBox.dds");
+	_mine->LoadTexture(_pd3dDevice, L"seaMine.dds");
 
 	_seaBed = new Object("finalWavesPlease.obj",_pd3dDevice,true);
 	_seaBed->LoadTexture(_pd3dDevice, L"desert.dds");
 
 	_desert = new Object("desert.obj", _pd3dDevice, true);
 	_desert->LoadTexture(_pd3dDevice, L"desert.dds");
+
 	_thirdPersonCam = new Camera(_ship->GetPosition(), XMFLOAT3(0.0f, 0.0f, 0.0f), _ship->GetMtrxUp(), _ship->GetMtrxLookTo(), _WindowWidth, _WindowHeight, 0.01f, 500.0f);
 	_thirdPersonCam->atSelection = false;
 	_firstPersonCam = new Camera(_ship->GetPosition(), XMFLOAT3(0.0f, 0.0f, 0.0f), _ship->GetMtrxUp(), _ship->GetMtrxLookTo(), _WindowWidth, _WindowHeight, 0.01f, 500.0f);
@@ -719,14 +721,11 @@ void Application::CreateObjects()
 	tempPosition = _loader->ReadFile();
 	_island->Update(XMMatrixScaling(0.7, 0.4, 0.7) * XMMatrixTranslation(tempPosition.x, tempPosition.y, tempPosition.z));
 	tempPosition = _loader->ReadFile();
-	_skyBox->Update(XMMatrixRotationX(3.141) * XMMatrixScaling(500.5, 500.5, 500.5) * XMMatrixRotationZ(3.14) * XMMatrixTranslation(tempPosition.x, tempPosition.y, tempPosition.z));
-	tempPosition = _loader->ReadFile();
 	_desert->Update(XMMatrixScaling(0.08, 0.2, 0.13) * XMMatrixTranslation(tempPosition.x, tempPosition.y, tempPosition.z));
 }
 
 void Application::CreateCameras()
 {
-	
 	XMFLOAT3 _debugEyePos = XMFLOAT3(0.0f, 30.0f, -15.0f);
 	XMFLOAT3 _debugUp = XMFLOAT3(0.0f, 1.0f, 0.0f);
 	XMFLOAT3 _debugAt = XMFLOAT3(0.0f, 3.0f, 3.0f);

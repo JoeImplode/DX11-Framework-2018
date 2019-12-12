@@ -39,7 +39,6 @@
     <ClInclude Include="ObjPositionLoader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Object.cpp" />
     <ClCompile Include="DX11 Framework.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -76,7 +75,12 @@
     <ClCompile Include="Ship.cpp">
       <Filter>Source\Objects</Filter>
     </ClCompile>
-    <ClCompile Include="ObjPositionLoader.cpp" />
+    <ClCompile Include="Object.cpp">
+      <Filter>Source\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjPositionLoader.cpp">
+      <Filter>Source\Objects</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">

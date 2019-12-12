@@ -5,7 +5,6 @@ DebugCam::DebugCam(XMFLOAT3 position, XMFLOAT3 at, XMFLOAT3 up, XMFLOAT3 to, FLO
 	_restrictMouse = false;
 	prevXPos = 0;
 	prevYPos = 0;
-
 	prevAngX = 0;
 	prevAngY = 0;
 	tempView = GetViewMtrx();
@@ -43,35 +42,35 @@ void DebugCam::HandleMouse(int mousePosX, int mousePosY)
 	if (GetAsyncKeyState(0x57))
 	{
 		XMFLOAT3 pos = GetEye();
-		SetPosition(XMFLOAT3(pos.x + temp._13 * 0.01, pos.y + temp._23 * 0.01, (pos.z + temp._33 * 0.01)));
+		SetPosition(XMFLOAT3(pos.x + temp._13 * velocity, pos.y + temp._23 * velocity, (pos.z + temp._33 * velocity)));
 	}
 	if (GetAsyncKeyState(0x53))
 	{
 		XMFLOAT3 pos = GetEye();
-		SetPosition(XMFLOAT3(pos.x - temp._13 * 0.01, pos.y - temp._23 * 0.01, pos.z - temp._33 * 0.01));
+		SetPosition(XMFLOAT3(pos.x - temp._13 * velocity, pos.y - temp._23 * velocity, pos.z - temp._33 * velocity));
 	}
 
 	if (GetAsyncKeyState(0x41))
 	{
 		XMFLOAT3 pos = GetEye();
-		SetPosition(XMFLOAT3(pos.x - temp._11 * 0.01, pos.y - temp._21 * 0.01, pos.z - temp._31 * 0.01));
+		SetPosition(XMFLOAT3(pos.x - temp._11 * velocity, pos.y - temp._21 * velocity, pos.z - temp._31 * velocity));
 	}
 
 	if (GetAsyncKeyState(0x44))
 	{
 		XMFLOAT3 pos = GetEye();
-		SetPosition(XMFLOAT3(pos.x + temp._11 * 0.01, pos.y + temp._21 * 0.01, pos.z + temp._31 * 0.01));
+		SetPosition(XMFLOAT3(pos.x + temp._11 * velocity, pos.y + temp._21 * velocity, pos.z + temp._31 * velocity));
 	}
 
 	if (GetAsyncKeyState(VK_SPACE))
 	{
 		XMFLOAT3 pos = GetEye();
-		SetPosition(XMFLOAT3(pos.x + temp._12 * 0.01, pos.y + temp._22 * 0.01, pos.z + temp._32 * 0.01));
+		SetPosition(XMFLOAT3(pos.x + temp._12 * velocity, pos.y + temp._22 * velocity, pos.z + temp._32 * velocity));
 	}
 	if (GetAsyncKeyState(VK_LSHIFT))
 	{
 		XMFLOAT3 pos = GetEye();
-		SetPosition(XMFLOAT3(pos.x - temp._12 * 0.01, pos.y - temp._22 * 0.01, pos.z - temp._32 * 0.01));
+		SetPosition(XMFLOAT3(pos.x - temp._12 * velocity, pos.y - temp._22 * velocity, pos.z - temp._32 * velocity));
 	}
 
 	prevXPos = mousePosX;
